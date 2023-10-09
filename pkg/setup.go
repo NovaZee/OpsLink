@@ -1,8 +1,9 @@
-package internal
+package pkg
 
 import (
 	"fmt"
 	config "github.com/denovo/permission/configration"
+	"github.com/denovo/permission/pkg/casbin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -13,7 +14,19 @@ var (
 	CasbinSetting *config.CasbinModelPath
 )
 
-func InitDBConnection(cfg *config.Config) error {
+func InitializeServer(cfg *config.Config) (*OpsLinkServer, error) {
+	err := initDBConnection(cfg)
+	if err != nil {
+		return nil, err
+	}
+	e := casbin.NewCasbin(DBEngine, cfg.CMPath.ModelPath)
+	success, _ := e.Enforce("1", "2", "#")
+	fmt.Sprint(success)
+	os, err := NewOpsLinkServer(cfg)
+	return os, err
+}
+
+func initDBConnection(cfg *config.Config) error {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=%s&parseTime=%t&loc=Local",
 		cfg.Dbs.Username,
 		cfg.Dbs.Password,

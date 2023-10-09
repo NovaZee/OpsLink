@@ -1,13 +1,17 @@
-package model
+package casbin
 
 import (
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/util"
 	gormadapter "github.com/casbin/gorm-adapter/v3"
-	"github.com/denovo/permission/internal"
+	"gorm.io/gorm"
 	"log"
 	"strings"
 )
+
+type Casbin struct {
+	e *casbin.Enforcer
+}
 
 type CasinoModel struct {
 	PType  string `gorm:"column:p_type" json:"p_type" form:"p_type" description:"策略类型"`
@@ -23,15 +27,15 @@ func (c *CasinoModel) AddPolicy() error {
 	return nil
 }
 
-func Casbin() *casbin.Enforcer {
+func NewCasbin(engine *gorm.DB, conf string) *casbin.Enforcer {
 	// 使用MySQL数据库初始化一个orm适配器
-	adapter, err := gormadapter.NewAdapterByDB(internal.DBEngine)
+	adapter, err := gormadapter.NewAdapterByDB(engine)
 	if err != nil {
 		log.Fatalf("error: adapter: %s", err)
 	}
-	enforcer, err := casbin.NewEnforcer(internal.CasbinSetting, adapter)
+	enforcer, err := casbin.NewEnforcer(conf, adapter)
 	enforcer.AddFunction("ParamsMatch", ParamsMatchFunc)
-	enforcer.LoadPolicy()
+	_ = enforcer.LoadPolicy()
 	return enforcer
 }
 

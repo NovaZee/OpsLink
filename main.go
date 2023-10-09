@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/denovo/permission/configration"
-	"github.com/denovo/permission/internal"
+	"github.com/denovo/permission/pkg"
 	"github.com/urfave/cli/v2"
 	"os"
 )
@@ -37,10 +37,8 @@ func start(c *cli.Context) error {
 	}
 	//初始化日志
 	config.InitLoggerFromConfig(cfg.Logging)
-	//初始化orm连接
-	if err := internal.InitDBConnection(cfg); err != nil {
-		return err
-	}
+	//初始化程序
+	pkg.InitializeServer(cfg)
 	return nil
 }
 

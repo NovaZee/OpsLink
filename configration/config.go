@@ -15,7 +15,7 @@ type Config struct {
 	Dbs     DBConfig        `yaml:"dbs"`
 	Server  ServerConfig    `yaml:"server"`
 	Logging LoggingConfig   `yaml:"logging,omitempty"`
-	CMPath  CasbinModelPath `yaml:"CMPath"`
+	CMPath  CasbinModelPath `yaml:"casbin_path,omitempty"`
 }
 
 // DBConfig 数据库配置
@@ -58,6 +58,9 @@ var DefaultConfig = Config{
 		HttpPort:     "8080",
 		ReadTimeout:  60,
 		WriteTimeout: 60,
+	},
+	CMPath: CasbinModelPath{
+		ModelPath: "/media/denovo/data1/go/OpsLink/OpsLink/configration/cfg/rbac_model.conf",
 	},
 	Logging: LoggingConfig{},
 }
