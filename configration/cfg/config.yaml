@@ -1,0 +1,37 @@
+# 服务配置
+Server:
+  # 运行模式
+  RunMode: debug
+  # 服务端口
+  HttpPort: 8080
+  # 读取超时时间
+  ReadTimeout: 60
+  # 写入超时时间
+  WriteTimeout: 60
+
+# 数据库配置
+Database:
+  # 数据库类型
+  DBType: mysql
+  # 用户名
+  Username: ops
+  # 密码
+  Password: 1qaz@WSX
+  # 主机
+  Host: "172.17.100.158:3306"
+  # 数据库名
+  DBName: casbin_test
+  # 表前缀
+  TablePrefix: ops_
+  # 字符集
+  Charset: utf8
+  # 解析
+  ParseTime: True
+  # idle时间
+  MaxIdleTime: 10
+  # 最大连接数
+  MaxOpenConn: 30
+
+# Casbin权限策略配置
+Casbin:
+  ModelPath: 'configs/rbac_model.conf'
