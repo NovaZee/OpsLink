@@ -38,7 +38,10 @@ func start(c *cli.Context) error {
 	//初始化日志
 	config.InitLoggerFromConfig(cfg.Logging)
 	//初始化程序
-	pkg.InitializeServer(cfg)
+	_, err := pkg.InitializeServer(cfg)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	config "github.com/denovo/permission/configration"
 	"github.com/denovo/permission/pkg/casbin"
+	"github.com/oppslink/protocol/logger"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -19,9 +20,12 @@ func InitializeServer(cfg *config.Config) (*OpsLinkServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	e := casbin.NewCasbin(DBEngine, cfg.CMPath.ModelPath)
+	e, err := casbin.NewCasbin(DBEngine, cfg.CMPath.ModelPath)
+	if err != nil {
+		return nil, err
+	}
 	success, _ := e.Enforce("1", "2", "#")
-	fmt.Sprint(success)
+	logger.Infow("success:", "bool", success)
 	os, err := NewOpsLinkServer(cfg)
 	return os, err
 }
