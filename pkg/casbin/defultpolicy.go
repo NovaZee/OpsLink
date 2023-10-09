@@ -5,7 +5,7 @@ import (
 )
 
 type DefaultPolicy struct {
-	CasbinI
+	Policy
 	e *casbin.Enforcer
 }
 
@@ -13,10 +13,10 @@ func (c *DefaultPolicy) Add() bool {
 	filteredPolicy := c.e.GetFilteredPolicy(0, "alice")
 }
 func (c *DefaultPolicy) Update() bool {
-	return nil
+	return false
 }
 func (c *DefaultPolicy) Delete() bool {
-	return nil
+	return false
 }
 
 func NewDefaultPolicy(cba CasbinAdapter) (*DefaultPolicy, error) {

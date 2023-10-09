@@ -5,7 +5,7 @@ import (
 )
 
 type RbacPolicy struct {
-	CasbinI
+	Policy
 	e *casbin.Enforcer
 }
 

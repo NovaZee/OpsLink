@@ -42,6 +42,7 @@ func NewCasbinAdapter(engine *gorm.DB, conf string) *CasbinAdapter {
 	}
 }
 
+// NewCasbin: usage for policy upate
 func (c *CasbinAdapter) NewCasbin() (*casbin.Enforcer, error) {
 	// 使用MySQL数据库初始化一个orm适配器
 	adapter, err := gormadapter.NewAdapterByDB(c.engine)
@@ -69,7 +70,7 @@ func ParamsMatchFunc(args ...interface{}) (interface{}, error) {
 	return ParamsMatch(name1, name2), nil
 }
 
-type CasbinI interface {
+type Policy interface {
 	Add() bool
 	Update() bool
 	Delete() bool
