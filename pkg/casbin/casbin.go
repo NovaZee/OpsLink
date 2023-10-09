@@ -35,6 +35,13 @@ func NewCasbin(cba CasbinAdapter, rbac RbacPolicy, policy DefaultPolicy) *Casbin
 	}
 }
 
+func NewCasbinAdapter(engine *gorm.DB, conf string) *CasbinAdapter {
+	return &CasbinAdapter{
+		engine: engine,
+		conf:   conf,
+	}
+}
+
 func (c *CasbinAdapter) NewCasbin() (*casbin.Enforcer, error) {
 	// 使用MySQL数据库初始化一个orm适配器
 	adapter, err := gormadapter.NewAdapterByDB(c.engine)

@@ -20,11 +20,11 @@ func InitializeServer(cfg *config.Config) (*OpsLinkServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	e, err := casbin.NewCasbin(DBEngine, cfg.CMPath.ModelPath)
+	e := casbin.NewCasbinAdapter(DBEngine, cfg.CMPath.ModelPath)
 	if err != nil {
 		return nil, err
 	}
-	success, _ := e.Enforce("1", "2", "#")
+	success, _ := e.NewCasbin("1", "2", "#")
 	logger.Infow("success:", "bool", success)
 	os, err := NewOpsLinkServer(cfg)
 	return os, err
