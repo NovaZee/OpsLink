@@ -27,16 +27,19 @@ func (c *CasinoModel) AddPolicy() error {
 	return nil
 }
 
-func NewCasbin(engine *gorm.DB, conf string) *casbin.Enforcer {
+func NewCasbin(engine *gorm.DB, conf string) (*casbin.Enforcer, error) {
 	// 使用MySQL数据库初始化一个orm适配器
 	adapter, err := gormadapter.NewAdapterByDB(engine)
 	if err != nil {
 		log.Fatalf("error: adapter: %s", err)
 	}
 	enforcer, err := casbin.NewEnforcer(conf, adapter)
+	if err != nil {
+		return nil, err
+	}
 	enforcer.AddFunction("ParamsMatch", ParamsMatchFunc)
 	_ = enforcer.LoadPolicy()
-	return enforcer
+	return enforcer, nil
 }
 
 func ParamsMatch(fullNameKey1 string, key2 string) bool {
