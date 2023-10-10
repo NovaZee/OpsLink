@@ -9,18 +9,18 @@ type RbacPolicy struct {
 	e *casbin.Enforcer
 }
 
-func (c *RbacPolicy) Add() bool {
-	return nil
+func (c *RbacPolicy) Add(any2 any) bool {
+	return false
 }
 func (c *RbacPolicy) Update() bool {
-	return nil
+	return false
 }
 func (c *RbacPolicy) Delete() bool {
-	return nil
+	return false
 }
 
 func NewRbacPolicy(cba CasbinAdapter) (*DefaultPolicy, error) {
-	enforcer, _ := cba.NewCasbin()
+	enforcer, _ := cba.Casbin()
 	return &DefaultPolicy{
 		e: enforcer,
 	}, nil

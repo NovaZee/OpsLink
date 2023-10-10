@@ -4,9 +4,14 @@ import (
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/util"
 	gormadapter "github.com/casbin/gorm-adapter/v3"
+	config "github.com/denovo/permission/configration"
 	"gorm.io/gorm"
 	"log"
 	"strings"
+)
+
+var (
+	CasbinSetting *config.CasbinModelPath
 )
 
 type Casbin struct {
@@ -34,16 +39,23 @@ func NewCasbin(cba CasbinAdapter, rbac RbacPolicy, policy DefaultPolicy) *Casbin
 		rbacPolicy:    rbac,
 	}
 }
+func NewCasbinModel(s2 string, s3 string, s4 string) *CasbinModel {
+	return &CasbinModel{
+		RoleId: s2,
+		Path:   s3,
+		Method: s4,
+	}
+}
 
-func NewCasbinAdapter(engine *gorm.DB, conf string) *CasbinAdapter {
+func NewCasbinAdapter(engine *gorm.DB, conf *config.Config) *CasbinAdapter {
 	return &CasbinAdapter{
 		engine: engine,
-		conf:   conf,
+		conf:   conf.CMPath.ModelPath,
 	}
 }
 
 // NewCasbin: usage for policy upate
-func (c *CasbinAdapter) NewCasbin() (*casbin.Enforcer, error) {
+func (c *CasbinAdapter) Casbin() (*casbin.Enforcer, error) {
 	// 使用MySQL数据库初始化一个orm适配器
 	adapter, err := gormadapter.NewAdapterByDB(c.engine)
 	if err != nil {
@@ -71,7 +83,7 @@ func ParamsMatchFunc(args ...interface{}) (interface{}, error) {
 }
 
 type Policy interface {
-	Add() bool
+	Add(a any) bool
 	Update() bool
 	Delete() bool
 }
