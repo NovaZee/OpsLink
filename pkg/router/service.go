@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+// AddPolicy 新增权限策略
 func AddPolicy(ctx *gin.Context, c *casbin.Casbin) {
 	sub := ctx.Query("sub")
 	obj := ctx.Query("obj")
@@ -24,6 +25,7 @@ func AddPolicy(ctx *gin.Context, c *casbin.Casbin) {
 	return
 }
 
+// DeletePolicy  删除权限策略
 func DeletePolicy(ctx *gin.Context, c *casbin.Casbin) {
 	sub := ctx.Query("sub")
 	obj := ctx.Query("obj")

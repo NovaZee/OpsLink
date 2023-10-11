@@ -53,11 +53,11 @@ func InitCasbin(conf *config.Config) (*Casbin, error) {
 
 func (c *Casbin) InitPermission() {
 
-	//p, role_read, /v1, read
-	//p, role_write, /v1, write
-	//p, role_manager, /v1/manager, owner
+	// p, role_read, /v1, read
+	// p, role_write, /v1, write
+	// p, role_manager, /v1/manager, owner
 
-	//用户初始化
+	// 用户初始化
 	roleRead := c.DefaultPolicy.e.HasPolicy("role_read", "/v1", "read")
 	if !roleRead {
 		c.DefaultPolicy.e.AddPolicy("role_read", "/v1", "read")
@@ -73,7 +73,7 @@ func (c *Casbin) InitPermission() {
 		c.DefaultPolicy.e.AddPolicy("role_manager", "/v1/manager", "owner")
 		logger.Infow("InitPermission", "role_manager", "权限初始化成功")
 	}
-	//角色初始化
+	// 角色初始化
 	user := c.RbacPolicy.e.AddRoleForUser("admin", "owner")
 	if user {
 		logger.Infow("InitPermission", "admin", "权限初始化成功")
