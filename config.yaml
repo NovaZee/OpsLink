@@ -3,33 +3,14 @@ server:
   # run mode ： dev debug product
   run_mode: debug
   # http port
-  http_port: 8080
+  http_port: 8082
   # read time out /S
   read_timeout: 60
   # write time out /S
   write_timeout: 60
-# database config
-dbs:
-  # type
-  db_type: mysql
-  # username
-  username: root
-  # password
-  password: Hanweb@123
-  # host: ip:port
-  host: "192.168.5.26:3306"
-  # dbname
-  db_name: a_local_jmeeting
-  # table
-  table_prefix: ops_
-  # 字符集
-  charset: utf8mb4
-  # 解析
-  parse_time: True
-  # idle时间
-  max_idle_time: 10
-  # 最大连接数
-  max_open_conn: 30
+etcd:
+  host: "127.0.0.1"
+  port: "2379"
 logging:
   level: info
   json: false

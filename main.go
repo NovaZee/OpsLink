@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/denovo/permission/configration"
 	"github.com/denovo/permission/pkg"
+	"github.com/denovo/permission/pkg/router"
 	"github.com/urfave/cli/v2"
 	"os"
 )
@@ -38,9 +39,13 @@ func start(c *cli.Context) error {
 	//初始化日志
 	config.InitLoggerFromConfig(cfg.Logging)
 	//初始化程序
-	_, err := pkg.InitializeServer(cfg)
+	server, err := pkg.InitializeServer(cfg)
 	if err != nil {
 		return err
+	}
+	error = router.InitRouter(server.Casbin, cfg)
+	if error != nil {
+		return error
 	}
 	return nil
 }
