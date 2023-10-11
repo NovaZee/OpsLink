@@ -7,26 +7,24 @@
 package pkg
 
 import (
+	"github.com/coreos/etcd/clientv3"
 	"github.com/denovo/permission/configration"
 	"github.com/denovo/permission/pkg/casbin"
 	"github.com/denovo/permission/pkg/componment"
-	"github.com/denovo/permission/pkg/router"
-	"gorm.io/gorm"
 )
 
 // Injectors from wire.go:
 
 func InitializeServer(cfg *config.Config) (*OpsLinkServer, error) {
-	db, err := getDbEngine(cfg)
+	client, err := initCasbin(cfg)
 	if err != nil {
 		return nil, err
 	}
-	casbinAdapter := getCasbinAdapter(db, cfg)
-	router, err := initRouter(casbinAdapter)
+	casbin, err := initEtcd(cfg)
 	if err != nil {
 		return nil, err
 	}
-	opsLinkServer, err := NewOpsLinkServer(cfg, db, casbinAdapter, router)
+	opsLinkServer, err := NewOpsLinkServer(cfg, client, casbin)
 	if err != nil {
 		return nil, err
 	}
@@ -35,14 +33,10 @@ func InitializeServer(cfg *config.Config) (*OpsLinkServer, error) {
 
 // wire.go:
 
-func getDbEngine(conf *config.Config) (*gorm.DB, error) {
-	return componment.InitDBConnection(conf)
+func initEtcd(conf *config.Config) (*casbin.Casbin, error) {
+	return casbin.InitCasbin(conf)
 }
 
-func getCasbinAdapter(engine *gorm.DB, conf *config.Config) *casbin.CasbinAdapter {
-	return casbin.NewCasbinAdapter(engine, conf)
-}
-
-func initRouter(ca *casbin.CasbinAdapter) (*router.Router, error) {
-	return router.InitRouter(ca)
+func initCasbin(conf *config.Config) (*clientv3.Client, error) {
+	return componment.InitEtcd(conf)
 }

@@ -1,7 +1,7 @@
 package casbin
 
 import (
-	"github.com/casbin/casbin/v2"
+	"github.com/casbin/casbin"
 )
 
 type RbacPolicy struct {
@@ -9,19 +9,19 @@ type RbacPolicy struct {
 	e *casbin.Enforcer
 }
 
-func (c *RbacPolicy) Add(any2 any) bool {
+func (c *RbacPolicy) Add(a any) bool {
 	return false
 }
-func (c *RbacPolicy) Update() bool {
+func (c *RbacPolicy) Update(a any) bool {
 	return false
 }
-func (c *RbacPolicy) Delete() bool {
+func (c *RbacPolicy) Delete(a any) bool {
 	return false
 }
 
-func NewRbacPolicy(cba CasbinAdapter) (*DefaultPolicy, error) {
+func NewRbacPolicy(cba *CasbinAdapter) (*RbacPolicy, error) {
 	enforcer, _ := cba.Casbin()
-	return &DefaultPolicy{
+	return &RbacPolicy{
 		e: enforcer,
 	}, nil
 }

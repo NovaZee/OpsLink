@@ -12,24 +12,16 @@ var (
 )
 
 type Config struct {
-	Dbs     DBConfig        `yaml:"dbs"`
-	Server  ServerConfig    `yaml:"server"`
-	Logging LoggingConfig   `yaml:"logging,omitempty"`
-	CMPath  CasbinModelPath `yaml:"casbin_path,omitempty"`
+	EtcdConfig EtcdConfig      `yaml:"etcd"`
+	Server     ServerConfig    `yaml:"server"`
+	Logging    LoggingConfig   `yaml:"logging,omitempty"`
+	CMPath     CasbinModelPath `yaml:"casbin_path,omitempty"`
 }
 
-// DBConfig 数据库配置
-type DBConfig struct {
-	DBType      string `yaml:"db_type"`
-	Username    string `yaml:"username"`
-	Password    string `yaml:"password"`
-	Host        string `yaml:"host"`
-	DBName      string `yaml:"db_name"`
-	TablePrefix string `yaml:"table_prefix"`
-	Charset     string `yaml:"charset,omitempty"`
-	ParseTime   bool   `yaml:"parse_time,omitempty"`
-	MaxIdleTime int    `yaml:"max_idle_time,omitempty"`
-	MaxOpenConn int    `yaml:"max_open_conn,omitempty"`
+// EtcdConfig Etcd配置
+type EtcdConfig struct {
+	Host string `yaml:"host"`
+	Port string `yaml:"port"`
 }
 
 // ServerConfig 服务器配置
@@ -46,12 +38,9 @@ type LoggingConfig struct {
 }
 
 var DefaultConfig = Config{
-	Dbs: DBConfig{
-		DBType:   "mysql",
-		Username: "root",
-		Password: "root",
-		Host:     "127.0.01",
-		DBName:   "OpsLink",
+	EtcdConfig: EtcdConfig{
+		Host: "127.0.0.1",
+		Port: "2379",
 	},
 	Server: ServerConfig{
 		RunMode:      "dev",
