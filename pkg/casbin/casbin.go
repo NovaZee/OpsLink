@@ -12,6 +12,12 @@ var (
 	CasbinSetting *config.CasbinModelPath
 )
 
+const (
+	Read  = "read"
+	Write = "write"
+	Admin = "admin"
+)
+
 type Casbin struct {
 	Adapter       *CasbinAdapter
 	DefaultPolicy *DefaultPolicy
@@ -25,10 +31,10 @@ type CasbinAdapter struct {
 }
 
 type CasbinModel struct {
-	PType  string `gorm:"column:p_type" json:"p_type" form:"p_type" description:"策略类型"`
-	RoleId string `gorm:"column:v0" json:"role_id" form:"v0" description:"角色id"`
-	Path   string `gorm:"column:v1" json:"path" form:"v1" description:"资源"`
-	Method string `gorm:"column:v2" json:"method" form:"v2" description:"权限"`
+	PType    string `gorm:"column:p_type" json:"p_type" form:"p_type" description:"策略类型"`
+	Role     string `gorm:"column:v0" json:"role" form:"v0" description:"角色id"`
+	Source   string `gorm:"column:v1" json:"source" form:"v1" description:"资源"`
+	Behavior string `gorm:"column:v2" json:"behavior" form:"v2" description:"权限"`
 }
 
 func InitCasbin(conf *config.Config) (*Casbin, error) {
@@ -82,9 +88,9 @@ func (c *Casbin) InitPermission() {
 }
 func NewCasbinModel(s2 string, s3 string, s4 string) *CasbinModel {
 	return &CasbinModel{
-		RoleId: s2,
-		Path:   s3,
-		Method: s4,
+		Role:     s2,
+		Source:   s3,
+		Behavior: s4,
 	}
 }
 

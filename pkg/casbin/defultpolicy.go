@@ -11,7 +11,7 @@ type DefaultPolicy struct {
 
 func (c *DefaultPolicy) Add(a any) bool {
 	if casbinModel, ok := a.(*CasbinModel); ok {
-		result := c.e.AddPolicy(casbinModel.RoleId, casbinModel.Path, casbinModel.Method)
+		result := c.e.AddPolicy(casbinModel.Role, casbinModel.Source, casbinModel.Behavior)
 		return result
 	}
 	return false
@@ -25,7 +25,7 @@ func (c *DefaultPolicy) Update(a any) bool {
 }
 func (c *DefaultPolicy) Delete(a any) bool {
 	if casbinModel, ok := a.(*CasbinModel); ok {
-		result := c.e.RemovePolicy(casbinModel.RoleId, casbinModel.Path, casbinModel.Method)
+		result := c.e.RemovePolicy(casbinModel.Role, casbinModel.Source, casbinModel.Behavior)
 		return result
 	}
 	return false

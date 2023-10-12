@@ -39,7 +39,7 @@ func NewRouter(g *gin.Engine, ca *casbin.Casbin) (*Router, error) {
 }
 
 func (r *Router) InitRouting() {
-	v1 := r.router.Group("/manager")
+	v1 := r.router.Group("/manager", ManagerMiddleware())
 	{
 		v1.POST("addPolicy", func(ctx *gin.Context) {
 			AddPolicy(ctx, r.cb)
