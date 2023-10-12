@@ -20,9 +20,9 @@ func InitializeServer(cfg *config.Config) (*OpsLinkServer, error) {
 	return &OpsLinkServer{}, nil
 }
 
-func initEtcd(conf *config.Config) (*casbin.Casbin, error) {
+func initCasbin(conf *config.Config) (*casbin.Casbin, error) {
 	return casbin.InitCasbin(conf)
 }
-func initCasbin(conf *config.Config) (*clientv3.Client, error) {
+func initEtcd(conf *config.Config) (*clientv3.Client, error) {
 	return componment.InitEtcd(conf)
 }

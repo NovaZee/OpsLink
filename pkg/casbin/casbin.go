@@ -31,10 +31,10 @@ type CasbinAdapter struct {
 }
 
 type CasbinModel struct {
-	PType    string `json:"p_type" form:"p_type" description:"策略类型"`
-	Role     string `json:"role" form:"v0" description:"角色id"`
+	PType    string `json:"p_type" form:"p_type" description:"策略"`
+	Role     string `json:"role" form:"v0" description:"角色/用户"`
 	Source   string `json:"source" form:"v1" description:"资源"`
-	Behavior string `json:"behavior" form:"v2" description:"权限"`
+	Behavior string `json:"behavior" form:"v2" description:"行为"`
 }
 
 func InitCasbin(conf *config.Config) (*Casbin, error) {

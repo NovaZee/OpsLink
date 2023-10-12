@@ -16,15 +16,15 @@ import (
 // Injectors from wire.go:
 
 func InitializeServer(cfg *config.Config) (*OpsLinkServer, error) {
-	client, err := initCasbin(cfg)
+	casbin, err := initCasbin(cfg)
 	if err != nil {
 		return nil, err
 	}
-	casbin, err := initEtcd(cfg)
+	etcd, err := initEtcd(cfg)
 	if err != nil {
 		return nil, err
 	}
-	opsLinkServer, err := NewOpsLinkServer(cfg, client, casbin)
+	opsLinkServer, err := NewOpsLinkServer(cfg, etcd, casbin)
 	if err != nil {
 		return nil, err
 	}
@@ -33,10 +33,10 @@ func InitializeServer(cfg *config.Config) (*OpsLinkServer, error) {
 
 // wire.go:
 
-func initEtcd(conf *config.Config) (*casbin.Casbin, error) {
+func initCasbin(conf *config.Config) (*casbin.Casbin, error) {
 	return casbin.InitCasbin(conf)
 }
 
-func initCasbin(conf *config.Config) (*clientv3.Client, error) {
+func initEtcd(conf *config.Config) (*clientv3.Client, error) {
 	return componment.InitEtcd(conf)
 }
