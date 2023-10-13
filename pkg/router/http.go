@@ -57,7 +57,8 @@ func LogIn(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": ErrorParamsError, "status": http.StatusBadRequest})
 		return
 	}
-	role.NewRole()
+	role.NewRole(font)
+	//todo:通过etcd client存入用户配置
 }
 
 func SignIn() {

@@ -1,5 +1,9 @@
 package etcd
 
+import (
+	"github.com/denovo/permission/pkg/service/role"
+)
+
 type EtcdClient interface {
 	PermissionClient
 	DiscoveryClient
@@ -7,8 +11,9 @@ type EtcdClient interface {
 
 type PermissionClient interface {
 	SetPermissionPolicy(v any) error
-	GetPermissionPolicy(v any) (string, error)
-	DeletePermissionPolicy(key string) error
+	GetPermissionPolicy(v any) ([]role.Role, error)
+	DeletePermissionPolicy(v string) (int64, error)
+	UpdatePermissionPolicy(o any, n any) error
 }
 
 type DiscoveryClient interface {

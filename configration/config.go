@@ -5,6 +5,7 @@ import (
 	"github.com/oppslink/protocol/logger"
 	"gopkg.in/yaml.v3"
 	"strings"
+	"time"
 )
 
 var (
@@ -20,8 +21,9 @@ type Config struct {
 
 // EtcdConfig Etcd配置
 type EtcdConfig struct {
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
+	Endpoint          []string      `yaml:"endpoint"`
+	DialTimeout       time.Duration `yaml:"dial_timeout"`
+	DialKeepAliveTime time.Duration `yaml:"dial_keep_alive_time,omitempty"`
 }
 
 // ServerConfig 服务器配置
@@ -39,8 +41,8 @@ type LoggingConfig struct {
 
 var DefaultConfig = Config{
 	EtcdConfig: EtcdConfig{
-		Host: "127.0.0.1",
-		Port: "2379",
+		Endpoint:    []string{"127.0.0.1:2379"},
+		DialTimeout: 5,
 	},
 	Server: ServerConfig{
 		RunMode:      "dev",
