@@ -10,7 +10,7 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/denovo/permission/configration"
 	"github.com/denovo/permission/pkg/casbin"
-	"github.com/denovo/permission/pkg/componment"
+	"github.com/denovo/permission/pkg/etcd"
 )
 
 // Injectors from wire.go:
@@ -38,5 +38,5 @@ func initCasbin(conf *config.Config) (*casbin.Casbin, error) {
 }
 
 func initEtcd(conf *config.Config) (*clientv3.Client, error) {
-	return componment.InitEtcd(conf)
+	return etcd.InitEtcd(conf)
 }

@@ -3,11 +3,12 @@ package router
 import (
 	"errors"
 	"github.com/denovo/permission/pkg/casbin"
+	"github.com/denovo/permission/pkg/service/role"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
-// AddPolicy 新增权限策略
+// AddPolicy 新增权限策略 -manager
 func AddPolicy(ctx *gin.Context, c *casbin.Casbin) {
 	casbinModel, err := processManagerRequestParams(ctx)
 	if err != nil {
@@ -22,7 +23,7 @@ func AddPolicy(ctx *gin.Context, c *casbin.Casbin) {
 	return
 }
 
-// DeletePolicy  删除权限策略
+// DeletePolicy  删除权限策略 -manager
 func DeletePolicy(ctx *gin.Context, c *casbin.Casbin) {
 	casbinModel, err := processManagerRequestParams(ctx)
 	if err != nil {
@@ -37,7 +38,7 @@ func DeletePolicy(ctx *gin.Context, c *casbin.Casbin) {
 	return
 }
 
-// 共享的请求参数处理逻辑
+// 共享的请求参数处理逻辑 -manager
 func processManagerRequestParams(ctx *gin.Context) (*casbin.CasbinModel, error) {
 	role := ctx.Query("role")
 	source := ctx.Query("source")
@@ -48,4 +49,17 @@ func processManagerRequestParams(ctx *gin.Context) (*casbin.CasbinModel, error) 
 	}
 	casbinModel := casbin.NewCasbinModel(role, source, behavior)
 	return casbinModel, nil
+}
+
+func LogIn(ctx *gin.Context) {
+	var font role.FrontRole
+	if err := ctx.ShouldBind(&font); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": ErrorParamsError, "status": http.StatusBadRequest})
+		return
+	}
+	role.NewRole()
+}
+
+func SignIn() {
+
 }

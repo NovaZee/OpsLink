@@ -7,7 +7,7 @@ import (
 	clientv3 "github.com/coreos/etcd/clientv3"
 	config "github.com/denovo/permission/configration"
 	"github.com/denovo/permission/pkg/casbin"
-	"github.com/denovo/permission/pkg/componment"
+	"github.com/denovo/permission/pkg/etcd"
 	"github.com/google/wire"
 )
 
@@ -24,5 +24,5 @@ func initCasbin(conf *config.Config) (*casbin.Casbin, error) {
 	return casbin.InitCasbin(conf)
 }
 func initEtcd(conf *config.Config) (*clientv3.Client, error) {
-	return componment.InitEtcd(conf)
+	return etcd.InitEtcd(conf)
 }

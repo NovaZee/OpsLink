@@ -47,7 +47,6 @@ func start(c *cli.Context) error {
 	if error != nil {
 		return error
 	}
-	defer server.Etcd.Close()
 	return nil
 }
 

@@ -1,26 +1,27 @@
 package role
 
-import "sync"
+import (
+	"github.com/denovo/permission/pkg/etcd"
+	"github.com/google/uuid"
+	"sync"
+)
 
-type Role struct {
-	Id       int64  `json:"id" yaml:"id"`
+type FrontRole struct {
 	Name     string `json:"name" yaml:"name"`
 	Password string `json:"password" yaml:"password"`
-
-	Token string `json:"token" yaml:"token"`
-	mu    *sync.Mutex
 }
 
-func NewRole(id int64, name string, pwd string) *Role {
-	return &Role{
-		Id:       id,
-		Name:     name,
-		Password: pwd,
+type Role struct {
+	Id        uuid.UUID  `json:"id" yaml:"id"`
+	FrontRole *FrontRole `json:"front_role" yaml:"front_role"`
+	mu        *sync.Mutex
+}
+
+func NewRole(frontRole *FrontRole) (role *Role) {
+	role = &Role{
+		FrontRole: frontRole,
 	}
-}
-
-func (r *Role) LoadToken(token string) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.Token = token
+	role.Id = uuid.New()
+	etcd.KvClient{}
+	return
 }
