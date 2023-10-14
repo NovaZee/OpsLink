@@ -21,7 +21,6 @@ const (
 
 // 权限组
 const (
-	//http
 	GroupRead    = "role_read"
 	GroupWrite   = "role_write"
 	GroupManager = "role_manager"
@@ -29,8 +28,11 @@ const (
 
 // 资源
 const (
+	// http 资源
 	HttpV1      = "/v1"
 	HttpManager = "/manager"
+
+	//todo：k8s资源
 )
 
 type Casbin struct {
