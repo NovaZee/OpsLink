@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/denovo/permission/pkg/casbin"
 	"github.com/denovo/permission/pkg/service/role"
+	"github.com/denovo/permission/pkg/util"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -38,6 +39,21 @@ func DeletePolicy(ctx *gin.Context, c *casbin.Casbin) {
 	return
 }
 
+// DeletePolicy  删除权限策略 -manager
+func UpdatePolicy(ctx *gin.Context, c *casbin.Casbin) {
+	casbinModel, err := processManagerRequestParams(ctx)
+	if err != nil {
+		return
+	}
+	add := c.DefaultPolicy.Delete(casbinModel)
+	if add == false {
+		ctx.JSONP(http.StatusOK, gin.H{"message": "删除失败", "status": http.StatusOK})
+		return
+	}
+	ctx.JSONP(http.StatusOK, gin.H{"message": "删除成功", "status": http.StatusOK})
+	return
+}
+
 // 共享的请求参数处理逻辑 -manager
 func processManagerRequestParams(ctx *gin.Context) (*casbin.CasbinModel, error) {
 	role := ctx.Query("role")
@@ -51,16 +67,43 @@ func processManagerRequestParams(ctx *gin.Context) (*casbin.CasbinModel, error) 
 	return casbinModel, nil
 }
 
+// LogIn 登录
 func LogIn(ctx *gin.Context) {
 	var font role.FrontRole
 	if err := ctx.ShouldBind(&font); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": ErrorParamsError, "status": http.StatusBadRequest})
 		return
 	}
-	role.NewRole(font)
-	//todo:通过etcd client存入用户配置
+
 }
 
-func SignIn() {
+// SignIn 注册
+func SignIn(ctx *gin.Context, r *Router) {
+	var font role.FrontRole
+	if err := ctx.ShouldBind(&font); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": ErrorParamsError, "status": http.StatusBadRequest})
+		return
+	}
+	roles, err2 := r.PermissionEtcdClient.GetPermissionPolicy(font.Name)
+	if err2 != nil || len(roles) > 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": font.Name + " 已存在", "status": http.StatusBadRequest})
+		return
+	}
+	newRole := role.NewRole(font)
+	token, err := util.GenerateToken(newRole.Id, newRole.Name)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "token 生成失败", "status": http.StatusBadRequest})
+		return
+	}
+	// 成员信息存入
+	e := r.PermissionEtcdClient.SetPermissionPolicy(newRole)
+	if e != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "用户 生成失败", "status": http.StatusBadRequest})
+		return
+	}
+	// 成员权限初始化
+	_ = r.cb.DefaultPolicy.AddGroupingPolicy(newRole.Name, casbin.GroupRead)
+	ctx.JSON(http.StatusOK, gin.H{"message": token, "status": http.StatusOK})
+	return
 
 }

@@ -10,7 +10,7 @@ server:
   write_timeout: 60
 etcd:
   endpoint:
-    - "127.0.0.1:2379"
+    - "http://127.0.0.1:2379"
   DialTimeout: 5
 logging:
   level: info

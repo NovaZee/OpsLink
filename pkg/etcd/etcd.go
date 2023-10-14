@@ -4,6 +4,9 @@ import (
 	"github.com/denovo/permission/pkg/service/role"
 )
 
+const CasbinRuleKey = "/casbin_policy/"
+const RoleKey = "/role_key/"
+
 type EtcdClient interface {
 	PermissionClient
 	DiscoveryClient

@@ -7,10 +7,8 @@
 package pkg
 
 import (
-	"github.com/coreos/etcd/clientv3"
 	"github.com/denovo/permission/configration"
 	"github.com/denovo/permission/pkg/casbin"
-	"github.com/denovo/permission/pkg/etcd"
 )
 
 // Injectors from wire.go:
@@ -20,11 +18,8 @@ func InitializeServer(cfg *config.Config) (*OpsLinkServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	etcd, err := initEtcd(cfg)
-	if err != nil {
-		return nil, err
-	}
-	opsLinkServer, err := NewOpsLinkServer(cfg, etcd, casbin)
+
+	opsLinkServer, err := NewOpsLinkServer(cfg, casbin)
 	if err != nil {
 		return nil, err
 	}
@@ -35,8 +30,4 @@ func InitializeServer(cfg *config.Config) (*OpsLinkServer, error) {
 
 func initCasbin(conf *config.Config) (*casbin.Casbin, error) {
 	return casbin.InitCasbin(conf)
-}
-
-func initEtcd(conf *config.Config) (*clientv3.Client, error) {
-	return etcd.InitEtcd(conf)
 }

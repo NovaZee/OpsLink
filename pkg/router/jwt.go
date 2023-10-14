@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/denovo/permission/pkg/casbin"
 	"github.com/denovo/permission/pkg/util"
 	"net/http"
 	"time"
@@ -9,7 +10,7 @@ import (
 )
 
 // JWT token验证中间件
-func JWT() gin.HandlerFunc {
+func JWT(r *Router) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := c.GetHeader("Authorization")
 		if token == "" {
@@ -27,6 +28,18 @@ func JWT() gin.HandlerFunc {
 		} else if time.Now().Unix() > claims.ExpiresAt {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error":  ErrorAuthCheckTokenExpired,
+				"status": http.StatusBadRequest,
+			})
+		}
+
+		enforcer, err := r.cb.Adapter.Casbin()
+		if err != nil {
+			return
+		}
+		enforce := enforcer.Enforce(claims.UserName, casbin.HttpV1, casbin.Read)
+		if !enforce {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error":  ErrorAuthCheckTokenFail,
 				"status": http.StatusBadRequest,
 			})
 		}

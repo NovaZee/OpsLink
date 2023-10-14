@@ -5,15 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/coreos/etcd/clientv3"
 	config "github.com/denovo/permission/configration"
 	"github.com/denovo/permission/pkg/etcd"
 	"github.com/denovo/permission/pkg/service/role"
 	"github.com/oppslink/protocol/logger"
-	"go.etcd.io/etcd/clientv3"
 	"sync"
 )
-
-const RoleKey = "/role_key/"
 
 type PermissionEtcdClient struct {
 	etcd.PermissionClient
@@ -25,7 +23,7 @@ type PermissionEtcdClient struct {
 	logger logger.Logger
 }
 
-func InitEtcd(cfg config.Config) (*PermissionEtcdClient, error) {
+func InitEtcd(cfg *config.Config) (*PermissionEtcdClient, error) {
 	// 创建一个 etcd 客户端连接
 	etcd, err := clientv3.New(clientv3.Config{
 		Endpoints:   cfg.EtcdConfig.Endpoint, // etcd节点地址
@@ -35,11 +33,11 @@ func InitEtcd(cfg config.Config) (*PermissionEtcdClient, error) {
 		return nil, err
 	}
 
-	return NewEtcdEtcdPermissonClient(etcd, logger.GetLogger()), nil
+	return newEtcdEtcdPermissonClient(etcd, logger.GetLogger()), nil
 }
 
 // NewEtcdEtcdPermissonClient  create a register based on etcd
-func NewEtcdEtcdPermissonClient(c *clientv3.Client, opsLog logger.Logger) *PermissionEtcdClient {
+func newEtcdEtcdPermissonClient(c *clientv3.Client, opsLog logger.Logger) *PermissionEtcdClient {
 	return &PermissionEtcdClient{
 		client: c,
 		logger: opsLog,
@@ -122,7 +120,7 @@ func (pc *PermissionEtcdClient) UpdatePermissionPolicy(old any, new any) (*role.
 func key(v any) (k string) {
 	switch t := v.(type) {
 	case *role.Role:
-		k = RoleKey + t.FrontRole.Name
+		k = etcd.RoleKey + t.FrontRole.Name
 		return
 	default:
 		k = fmt.Sprintf("Unhandled type: %T", v)
