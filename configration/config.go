@@ -22,7 +22,7 @@ type Config struct {
 // EtcdConfig Etcd配置
 type EtcdConfig struct {
 	Endpoint          []string      `yaml:"endpoint"`
-	DialTimeout       time.Duration `yaml:"dial_timeout"`
+	DialTimeout       int           `yaml:"dial_timeout"`
 	DialKeepAliveTime time.Duration `yaml:"dial_keep_alive_time,omitempty"`
 }
 

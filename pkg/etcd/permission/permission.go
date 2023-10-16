@@ -11,6 +11,7 @@ import (
 	"github.com/denovo/permission/pkg/service/role"
 	"github.com/oppslink/protocol/logger"
 	"sync"
+	"time"
 )
 
 type PermissionEtcdClient struct {
@@ -27,7 +28,7 @@ func InitEtcd(cfg *config.Config) (*PermissionEtcdClient, error) {
 	// 创建一个 etcd 客户端连接
 	etcd, err := clientv3.New(clientv3.Config{
 		Endpoints:   cfg.EtcdConfig.Endpoint, // etcd节点地址
-		DialTimeout: cfg.EtcdConfig.DialTimeout,
+		DialTimeout: time.Duration(cfg.EtcdConfig.DialTimeout) * time.Second,
 	})
 	if err != nil {
 		return nil, err

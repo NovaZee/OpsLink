@@ -11,7 +11,7 @@ server:
 etcd:
   endpoint:
     - "http://127.0.0.1:2379"
-  DialTimeout: 5
+  dial_timeout: 5
 logging:
   level: info
   json: false

@@ -5,6 +5,7 @@ import (
 	"github.com/denovo/permission/configration"
 	"github.com/denovo/permission/pkg"
 	"github.com/denovo/permission/pkg/router"
+	"github.com/oppslink/protocol/logger"
 	"github.com/urfave/cli/v2"
 	"os"
 )
@@ -43,6 +44,7 @@ func start(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	logger.Infow("start server ", "port", cfg.Server.HttpPort)
 	error = router.InitRouter(server.Casbin, cfg)
 	if error != nil {
 		return error

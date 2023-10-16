@@ -39,7 +39,7 @@ func DeletePolicy(ctx *gin.Context, c *casbin.Casbin) {
 	return
 }
 
-// DeletePolicy  删除权限策略 -manager
+// UpdatePolicy  删除权限策略 -manager
 func UpdatePolicy(ctx *gin.Context, c *casbin.Casbin) {
 	casbinModel, err := processManagerRequestParams(ctx)
 	if err != nil {

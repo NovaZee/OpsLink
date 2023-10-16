@@ -33,6 +33,7 @@ func InitRouter(ca *casbin.Casbin, conf *config.Config) error {
 		return err
 	}
 	router.InitAdminRouting()
+	router.InitUserRouting()
 	s := engine.Run(":" + conf.Server.HttpPort).Error()
 	if len(s) != 0 {
 		return errors.New(s)
@@ -69,12 +70,12 @@ func (r *Router) InitAdminRouting() {
 
 // InitUserRouting 用户路由
 func (r *Router) InitUserRouting() {
-	admin := r.router.Group("")
+	admin := r.router.Group("/")
 	{
 		admin.POST("logIn", func(ctx *gin.Context) {
 			LogIn(ctx)
 		})
-		admin.GET("signIn", func(ctx *gin.Context) {
+		admin.POST("signIn", func(ctx *gin.Context) {
 			SignIn(ctx, r)
 		})
 	}
