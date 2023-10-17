@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"errors"
 	"github.com/denovo/permission/pkg/casbin"
 	"github.com/denovo/permission/pkg/service/role"
@@ -78,14 +79,14 @@ func LogIn(ctx *gin.Context) {
 }
 
 // SignIn 注册
-func SignIn(ctx *gin.Context, r *Router) {
+func SignIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
 	var font role.FrontRole
 	if err := ctx.ShouldBind(&font); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": ErrorParamsError, "status": http.StatusBadRequest})
 		return
 	}
-	roles, err2 := r.PermissionEtcdClient.GetPermissionPolicy(font.Name)
-	if err2 != nil || len(roles) > 0 {
+	get, err2 := r.roleClientv3.Get(ctx2, font.Name)
+	if err2 != nil || len(get) > 0 {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": font.Name + " 已存在", "status": http.StatusBadRequest})
 		return
 	}
@@ -96,7 +97,7 @@ func SignIn(ctx *gin.Context, r *Router) {
 		return
 	}
 	// 成员信息存入
-	e := r.PermissionEtcdClient.SetPermissionPolicy(newRole)
+	e := r.roleClientv3.Create(ctx2, newRole)
 	if e != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "用户 生成失败", "status": http.StatusBadRequest})
 		return

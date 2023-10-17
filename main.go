@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/denovo/permission/configration"
 	"github.com/denovo/permission/pkg"
+	etcdv3 "github.com/denovo/permission/pkg/clientv3"
 	"github.com/denovo/permission/pkg/router"
 	"github.com/oppslink/protocol/logger"
 	"github.com/urfave/cli/v2"
@@ -44,15 +45,21 @@ func start(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	back, err := etcdv3.New(cfg)
+	if err != nil {
+		return err
+	}
+
+	//rolesCfg := back.RolesCfg()
 	logger.Infow("start server ", "port", cfg.Server.HttpPort)
-	error = router.InitRouter(server.Casbin, cfg)
+	error = router.InitRouter(server.Casbin, cfg, back)
 	if error != nil {
 		return error
 	}
 	return nil
 }
 
-func getCfg(c *cli.Context) (*config.Config, error) {
+func getCfg(c *cli.Context) (*config.OpsLinkConfig, error) {
 	confString, err := getConfigString(c.String("config"), c.String("config-body"))
 	if err != nil {
 		return nil, err

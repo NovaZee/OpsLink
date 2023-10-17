@@ -24,7 +24,7 @@ type PermissionEtcdClient struct {
 	logger logger.Logger
 }
 
-func InitEtcd(cfg *config.Config) (*PermissionEtcdClient, error) {
+func InitEtcd(cfg *config.OpsLinkConfig) (*PermissionEtcdClient, error) {
 	// 创建一个 etcd 客户端连接
 	etcd, err := clientv3.New(clientv3.Config{
 		Endpoints:   cfg.EtcdConfig.Endpoint, // etcd节点地址

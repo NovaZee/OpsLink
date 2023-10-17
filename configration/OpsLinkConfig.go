@@ -12,7 +12,7 @@ var (
 	ErrCfgFail = errors.New("config parse error")
 )
 
-type Config struct {
+type OpsLinkConfig struct {
 	EtcdConfig EtcdConfig      `yaml:"etcd"`
 	Server     ServerConfig    `yaml:"server"`
 	Logging    LoggingConfig   `yaml:"logging,omitempty"`
@@ -39,7 +39,7 @@ type LoggingConfig struct {
 	logger.Config `yaml:",inline"`
 }
 
-var DefaultConfig = Config{
+var DefaultConfig = OpsLinkConfig{
 	EtcdConfig: EtcdConfig{
 		Endpoint:    []string{"127.0.0.1:2379"},
 		DialTimeout: 5,
@@ -60,7 +60,7 @@ type CasbinModelPath struct {
 	ModelPath string `yaml:"model_path,omitempty"`
 }
 
-func NewConfig(confString string, strictMode bool) (*Config, error) {
+func NewConfig(confString string, strictMode bool) (*OpsLinkConfig, error) {
 	cfg := DefaultConfig
 	if confString != "" {
 		decoder := yaml.NewDecoder(strings.NewReader(confString))

@@ -33,6 +33,7 @@ const (
 	HttpManager = "/manager"
 
 	//todo：k8s资源
+
 )
 
 type Casbin struct {
@@ -54,7 +55,7 @@ type CasbinModel struct {
 	Behavior string `json:"behavior" form:"v2" description:"行为"`
 }
 
-func InitCasbin(conf *config.Config) (*Casbin, error) {
+func InitCasbin(conf *config.OpsLinkConfig) (*Casbin, error) {
 	casbinAdapter := &CasbinAdapter{
 		etcdEndpoint: conf.EtcdConfig.Endpoint,
 		key:          etcd.CasbinRuleKey,

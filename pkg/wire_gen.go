@@ -13,7 +13,7 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeServer(cfg *config.Config) (*OpsLinkServer, error) {
+func InitializeServer(cfg *config.OpsLinkConfig) (*OpsLinkServer, error) {
 	casbin, err := initCasbin(cfg)
 	if err != nil {
 		return nil, err
@@ -28,6 +28,6 @@ func InitializeServer(cfg *config.Config) (*OpsLinkServer, error) {
 
 // wire.go:
 
-func initCasbin(conf *config.Config) (*casbin.Casbin, error) {
+func initCasbin(conf *config.OpsLinkConfig) (*casbin.Casbin, error) {
 	return casbin.InitCasbin(conf)
 }
