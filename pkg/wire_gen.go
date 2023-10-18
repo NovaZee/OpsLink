@@ -9,6 +9,7 @@ package pkg
 import (
 	"github.com/denovo/permission/configration"
 	"github.com/denovo/permission/pkg/casbin"
+	"github.com/denovo/permission/pkg/etcdv3"
 )
 
 // Injectors from wire.go:
@@ -18,8 +19,11 @@ func InitializeServer(cfg *config.OpsLinkConfig) (*OpsLinkServer, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	opsLinkServer, err := NewOpsLinkServer(cfg, casbin)
+	etcdv3Interface, err := initEtcd(cfg)
+	if err != nil {
+		return nil, err
+	}
+	opsLinkServer, err := NewOpsLinkServer(cfg, casbin, etcdv3Interface)
 	if err != nil {
 		return nil, err
 	}
@@ -30,4 +34,8 @@ func InitializeServer(cfg *config.OpsLinkConfig) (*OpsLinkServer, error) {
 
 func initCasbin(conf *config.OpsLinkConfig) (*casbin.Casbin, error) {
 	return casbin.InitCasbin(conf)
+}
+
+func initEtcd(conf *config.OpsLinkConfig) (etcdv3.Interface, error) {
+	return etcdv3.New(conf)
 }

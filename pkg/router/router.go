@@ -2,10 +2,9 @@ package router
 
 import (
 	"context"
-	"errors"
-	config "github.com/denovo/permission/configration"
+	"github.com/denovo/permission/pkg"
 	"github.com/denovo/permission/pkg/casbin"
-	etcdv3 "github.com/denovo/permission/pkg/clientv3"
+	etcdv3 "github.com/denovo/permission/pkg/etcdv3"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 )
@@ -23,24 +22,27 @@ type Router struct {
 	roleClientv3 etcdv3.RoleClientInterface
 }
 
-func InitRouter(ca *casbin.Casbin, conf *config.OpsLinkConfig, back etcdv3.Interface) error {
+func InitRouter(opslinkServer *pkg.OpsLinkServer) (*Router, error) {
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = ioutil.Discard
 	engine := gin.Default()
 	engine.Use(Logger())
-	engine.Run(conf.Server.HttpPort)
-	router, err := NewRouter(engine, ca, back)
+
+	defer engine.Run(":" + opslinkServer.Config.Server.HttpPort).Error()
+	//if len(s) != 0 {
+	//	return nil, errors.New(s)
+	//}
+
+	router, err := NewRouter(engine, opslinkServer.Casbin, opslinkServer.Interface)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
 	ctx := context.Background()
 	router.InitAdminRouting()
 	router.InitUserRouting(ctx)
-	s := engine.Run(":" + conf.Server.HttpPort).Error()
-	if len(s) != 0 {
-		return errors.New(s)
-	}
-	return nil
+
+	return router, nil
 }
 
 func NewRouter(g *gin.Engine, ca *casbin.Casbin, back etcdv3.Interface) (*Router, error) {

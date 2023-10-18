@@ -3,7 +3,7 @@ package casbin
 import (
 	"github.com/casbin/casbin"
 	config "github.com/denovo/permission/configration"
-	"github.com/denovo/permission/pkg/etcd"
+	"github.com/denovo/permission/pkg/etcdv3"
 	"github.com/oppslink/protocol/logger"
 	"github.com/sebastianliu/etcd-adapter"
 )
@@ -58,7 +58,7 @@ type CasbinModel struct {
 func InitCasbin(conf *config.OpsLinkConfig) (*Casbin, error) {
 	casbinAdapter := &CasbinAdapter{
 		etcdEndpoint: conf.EtcdConfig.Endpoint,
-		key:          etcd.CasbinRuleKey,
+		key:          etcdv3.CasbinRuleKey,
 		modelConf:    conf.CMPath.ModelPath,
 	}
 	defaultPolicy, _ := NewDefaultPolicy(casbinAdapter)

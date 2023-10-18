@@ -3,23 +3,20 @@ package pkg
 import (
 	config "github.com/denovo/permission/configration"
 	"github.com/denovo/permission/pkg/casbin"
-	etcdv3 "github.com/denovo/permission/pkg/clientv3"
-	"github.com/denovo/permission/pkg/router"
+	etcdv3 "github.com/denovo/permission/pkg/etcdv3"
 )
 
 type OpsLinkServer struct {
-	config    *config.OpsLinkConfig
+	Config    *config.OpsLinkConfig
 	Casbin    *casbin.Casbin
-	Interface *etcdv3.Interface
-	Router    *router.Router
+	Interface etcdv3.Interface
 }
 
-func NewOpsLinkServer(config *config.OpsLinkConfig, casbin *casbin.Casbin, interface1 *etcdv3.Interface, router *router.Router) (os *OpsLinkServer, err error) {
+func NewOpsLinkServer(config *config.OpsLinkConfig, casbin *casbin.Casbin, interface1 etcdv3.Interface) (os *OpsLinkServer, err error) {
 	os = &OpsLinkServer{
-		config:    config,
+		Config:    config,
 		Casbin:    casbin,
 		Interface: interface1,
-		Router:    router,
 	}
 	return
 }
