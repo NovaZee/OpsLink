@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"github.com/denovo/permission/configration"
 	"github.com/denovo/permission/pkg"
-	etcdv3 "github.com/denovo/permission/pkg/clientv3"
-	"github.com/denovo/permission/pkg/router"
-	"github.com/oppslink/protocol/logger"
 	"github.com/urfave/cli/v2"
 	"os"
 )
@@ -41,20 +38,9 @@ func start(c *cli.Context) error {
 	//初始化日志
 	config.InitLoggerFromConfig(cfg.Logging)
 	//初始化程序
-	server, err := pkg.InitializeServer(cfg)
+	_, err := pkg.InitializeServer(cfg)
 	if err != nil {
 		return err
-	}
-	back, err := etcdv3.New(cfg)
-	if err != nil {
-		return err
-	}
-
-	//rolesCfg := back.RolesCfg()
-	logger.Infow("start server ", "port", cfg.Server.HttpPort)
-	error = router.InitRouter(server.Casbin, cfg, back)
-	if error != nil {
-		return error
 	}
 	return nil
 }

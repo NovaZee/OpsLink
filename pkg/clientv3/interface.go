@@ -5,6 +5,6 @@ type Interface interface {
 }
 
 type RolesClient interface {
-	//RolesCfg() RoleClientInterface
+	// RolesCfg RolesCfg() RoleClientInterface
 	RolesCfg() RoleClientInterface
 }
