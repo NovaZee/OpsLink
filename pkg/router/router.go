@@ -29,9 +29,6 @@ func InitRouter(opslinkServer *pkg.OpsLinkServer) (*Router, error) {
 	engine.Use(Logger())
 
 	defer engine.Run(":" + opslinkServer.Config.Server.HttpPort).Error()
-	//if len(s) != 0 {
-	//	return nil, errors.New(s)
-	//}
 
 	router, err := NewRouter(engine, opslinkServer.Casbin, opslinkServer.Interface)
 	if err != nil {
@@ -55,7 +52,7 @@ func NewRouter(g *gin.Engine, ca *casbin.Casbin, back etcdv3.Interface) (*Router
 
 // InitAdminRouting 管理员路由
 func (r *Router) InitAdminRouting() {
-	admin := r.router.Group("/manager", ManagerMiddleware())
+	admin := r.router.Group("/manager")
 	{
 		admin.POST("addPolicy", func(ctx *gin.Context) {
 			AddPolicy(ctx, r.cb)
@@ -66,6 +63,7 @@ func (r *Router) InitAdminRouting() {
 		admin.POST("update", func(ctx *gin.Context) {
 		})
 	}
+	admin.Use(ManagerMiddleware())
 }
 
 // InitUserRouting 用户注册路由
@@ -84,10 +82,11 @@ func (r *Router) InitUserRouting(ctxEtcd context.Context) {
 // InitAccessingRouting 用户访问路由
 func (r *Router) InitAccessingRouting() {
 	// 访问请求通过jwt校验->casbin校验
-	admin := r.router.Group("/v1", JWT(r))
+	admin := r.router.Group("/v1")
 	{
 		admin.POST("index", func(ctx *gin.Context) {
 		})
 
 	}
+	admin.Use(JWT(r))
 }
