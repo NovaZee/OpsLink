@@ -28,7 +28,7 @@ func main() {
 	var kubeConfig *string
 
 	if h := homeDir(); h != "" {
-		kubeConfig = flag.String("kubeconfig", filepath.Join(h, ".kube", "config"), "use kubeconfig access to kubeapiserver")
+		kubeConfig = flag.String("kubeconfig", filepath.Join(h, ".kubeclient", "config"), "use kubeconfig access to kubeapiserver")
 	} else {
 		kubeConfig = flag.String("kubeconfig", "", "use kubeconfig access to kubeapiserver")
 	}

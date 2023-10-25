@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/denovo/permission/configration"
 	"github.com/denovo/permission/pkg"
+	"github.com/denovo/permission/pkg/kubeclient"
 	"github.com/denovo/permission/pkg/router"
 	"github.com/oppslink/protocol/logger"
 	"github.com/urfave/cli/v2"
@@ -32,6 +33,7 @@ func main() {
 }
 
 func start(c *cli.Context) error {
+	var err error
 	//load config file
 	cfg, error := getCfg(c)
 	if error != nil {
@@ -44,6 +46,9 @@ func start(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	client, err := kubeclient.NewK8sClient(cfg, "kubernetes")
+	client.Get()
+
 	logger.Infow("start server ", "port", cfg.Server.HttpPort)
 
 	//init http router

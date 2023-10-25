@@ -17,6 +17,7 @@ type OpsLinkConfig struct {
 	Server     ServerConfig    `yaml:"server"`
 	Logging    LoggingConfig   `yaml:"logging,omitempty"`
 	CMPath     CasbinModelPath `yaml:"casbin_path,omitempty"`
+	Kubernetes Kubernetes      `yaml:"kubernetes,omitempty"`
 }
 
 // EtcdConfig Etcd配置
@@ -34,6 +35,13 @@ type ServerConfig struct {
 	WriteTimeout int64  `yaml:"write_timeout,omitempty"`
 }
 
+// Kubernetes a K8s specific struct to hold config
+type Kubernetes struct {
+	K8sAPIRoot string `json:"k8s_api_root"`
+	Kubeconfig string `json:"kubeconfig"`
+	NodeName   string `json:"node_name"`
+}
+
 // LoggingConfig 日志配置
 type LoggingConfig struct {
 	logger.Config `yaml:",inline"`
@@ -49,6 +57,11 @@ var DefaultConfig = OpsLinkConfig{
 		HttpPort:     "8080",
 		ReadTimeout:  60,
 		WriteTimeout: 60,
+	},
+	Kubernetes: Kubernetes{
+		K8sAPIRoot: "",
+		Kubeconfig: "",
+		NodeName:   "",
 	},
 	CMPath: CasbinModelPath{
 		ModelPath: "/media/denovo/data1/go/OpsLink/OpsLink/configration/cfg/rbac_model.conf",
