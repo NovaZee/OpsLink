@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -43,4 +44,23 @@ func ParseToken(token string) (*Claims, error) {
 		}
 	}
 	return nil, err
+}
+
+func (j *Claims) RefreshToken(tokenStr string, role string) (string, error) {
+	jwt.TimeFunc = func() time.Time {
+		return time.Unix(0, 0)
+	}
+	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+	if err != nil {
+		return "", err
+	}
+	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+		jwt.TimeFunc = time.Now
+		claims.StandardClaims.ExpiresAt = time.Now().Add(1 * time.Hour).Unix()
+		user := j.UserID
+		return GenerateToken(user, role)
+	}
+	return "", errors.New("invalid")
 }
