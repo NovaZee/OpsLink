@@ -10,6 +10,7 @@ import (
 	"github.com/denovo/permission/configration"
 	"github.com/denovo/permission/pkg/casbin"
 	"github.com/denovo/permission/pkg/etcdv3"
+	"github.com/denovo/permission/pkg/kubeclient"
 )
 
 // Injectors from wire.go:
@@ -23,7 +24,11 @@ func InitializeServer(cfg *config.OpsLinkConfig) (*OpsLinkServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	opsLinkServer, err := NewOpsLinkServer(cfg, casbin, etcdv3Interface)
+	kubernetesClient, err := initClientSet(cfg)
+	if err != nil {
+		return nil, err
+	}
+	opsLinkServer, err := NewOpsLinkServer(cfg, casbin, etcdv3Interface, kubernetesClient)
 	if err != nil {
 		return nil, err
 	}
@@ -38,4 +43,12 @@ func initCasbin(conf *config.OpsLinkConfig) (*casbin.Casbin, error) {
 
 func initEtcd(conf *config.OpsLinkConfig) (etcdv3.Interface, error) {
 	return etcdv3.New(conf)
+}
+
+func initClientSet(conf *config.OpsLinkConfig) (*kubeclient.KubernetesClient, error) {
+	clinetInterface, err := kubeclient.NewClientInterface(conf, kubeclient.K8sClientTypeKubernetes)
+	if err != nil {
+		return nil, err
+	}
+	return kubeclient.GetClientSet(clinetInterface), nil
 }

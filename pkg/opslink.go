@@ -8,9 +8,10 @@ import (
 )
 
 type OpsLinkServer struct {
-	Config        *config.OpsLinkConfig
-	Casbin        *casbin.Casbin
-	Interface     etcdv3.Interface
+	Config    *config.OpsLinkConfig
+	Casbin    *casbin.Casbin
+	Interface etcdv3.Interface
+
 	kubeClientSet *kubeclient.KubernetesClient
 }
 

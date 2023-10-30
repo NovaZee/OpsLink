@@ -11,8 +11,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-type KubeClientInterface interface {
-	// Define methods that are common to both client types here.
+type ClientInterface interface {
 	Get()
 	List(ctx context.Context, namespace string) *v1.PodList
 	Apply()
@@ -25,7 +24,8 @@ const (
 	K8sClientTypeDynamic    KubeClientType = "dynamic"
 )
 
-func newClientInterface(conf *config.OpsLinkConfig, clientType KubeClientType) (KubeClientInterface, error) {
+// NewClientInterface Kubernetes客户端的接口实例
+func NewClientInterface(conf *config.OpsLinkConfig, clientType KubeClientType) (ClientInterface, error) {
 	var err error
 	kubeconfig := conf.Kubernetes.Kubeconfig
 	configOverrides := &clientcmd.ConfigOverrides{}
@@ -61,4 +61,20 @@ func newClientInterface(conf *config.OpsLinkConfig, clientType KubeClientType) (
 	default:
 		return nil, fmt.Errorf("Unsupported client type: %s", clientType)
 	}
+}
+
+// GetClientSet 断言转化接口实例为ClientSet，便于调用底层包中方法
+func GetClientSet(kube ClientInterface) *KubernetesClient {
+	if clientSet, ok := kube.(*KubernetesClient); ok {
+		return clientSet
+	}
+	return nil
+}
+
+// GetDynamicClient 断言转化接口实例为DynamicClient，便于调用底层包中方法
+func GetDynamicClient(kube ClientInterface) *DynamicClient {
+	if dynClient, ok := kube.(*DynamicClient); ok {
+		return dynClient
+	}
+	return nil
 }
