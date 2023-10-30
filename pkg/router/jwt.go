@@ -31,12 +31,7 @@ func JWT(r *Router) gin.HandlerFunc {
 				"status": http.StatusBadRequest,
 			})
 		}
-
-		enforcer, err := r.cb.Adapter.Casbin()
-		if err != nil {
-			return
-		}
-		enforce := enforcer.Enforce(claims.UserName, casbin.HttpV1, casbin.Read)
+		enforce := r.cb.Enforcer.Enforce(claims.UserName, casbin.HttpV1, casbin.Read)
 		if !enforce {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error":  ErrorAuthCheckTokenFail,

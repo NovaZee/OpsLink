@@ -12,6 +12,10 @@ var (
 	ErrCfgFail = errors.New("config parse error")
 )
 
+const CasbinCsvPath = "./config/file/casbin_policy.csv"
+const CasbinRuleKey = "casbin_policy"
+const RoleKey = "role_key"
+
 type OpsLinkConfig struct {
 	EtcdConfig EtcdConfig      `yaml:"etcd"`
 	Server     ServerConfig    `yaml:"server"`
@@ -48,10 +52,6 @@ type LoggingConfig struct {
 }
 
 var DefaultConfig = OpsLinkConfig{
-	EtcdConfig: EtcdConfig{
-		Endpoint:    []string{"127.0.0.1:2379"},
-		DialTimeout: 5,
-	},
 	Server: ServerConfig{
 		RunMode:      "dev",
 		HttpPort:     "8080",
@@ -64,7 +64,7 @@ var DefaultConfig = OpsLinkConfig{
 		NodeName:   "",
 	},
 	CMPath: CasbinModelPath{
-		ModelPath: "/media/denovo/data1/go/OpsLink/OpsLink/configration/cfg/rbac_model.conf",
+		ModelPath: "./config/file/rbac_model.conf",
 	},
 	Logging: LoggingConfig{},
 }

@@ -2,8 +2,7 @@ package casbin
 
 import (
 	"github.com/casbin/casbin"
-	config "github.com/denovo/permission/configration"
-	"github.com/denovo/permission/pkg/etcdv3"
+	config "github.com/denovo/permission/config"
 	"github.com/oppslink/protocol/logger"
 	"github.com/sebastianliu/etcd-adapter"
 )
@@ -37,9 +36,13 @@ const (
 )
 
 type Casbin struct {
-	Adapter       *CasbinAdapter
-	DefaultPolicy *DefaultPolicy
-	RbacPolicy    *RbacPolicy
+	Enforcer *casbin.Enforcer
+}
+
+func NewCasbin(Enforcer *casbin.Enforcer) *Casbin {
+	return &Casbin{
+		Enforcer: Enforcer,
+	}
 }
 
 type CasbinAdapter struct {
@@ -56,23 +59,19 @@ type CasbinModel struct {
 }
 
 func InitCasbin(conf *config.OpsLinkConfig) (*Casbin, error) {
-	casbinAdapter := &CasbinAdapter{
-		etcdEndpoint: conf.EtcdConfig.Endpoint,
-		key:          etcdv3.CasbinRuleKey,
-		modelConf:    conf.CMPath.ModelPath,
+	provider, err := NewEnforcerProvider(conf)
+	if err != nil {
+		return nil, err
 	}
-	defaultPolicy, _ := NewDefaultPolicy(casbinAdapter)
-	rbacPolicy, _ := NewRbacPolicy(casbinAdapter)
-	c := &Casbin{
-		Adapter:       casbinAdapter,
-		DefaultPolicy: defaultPolicy,
-		RbacPolicy:    rbacPolicy,
+	enforcer, err := provider.GetEnforcer(conf.CMPath.ModelPath)
+	if err != nil {
+		return nil, err
 	}
-
+	newCasbin := NewCasbin(enforcer)
 	// 初始化权限  读，写，管理
-	c.InitPermission()
+	newCasbin.InitPermission()
 
-	return c, nil
+	return newCasbin, nil
 }
 
 func (c *Casbin) InitPermission() {
@@ -82,24 +81,28 @@ func (c *Casbin) InitPermission() {
 	// p, role_manager, /v1/manager, owner
 
 	// 用户初始化
-	roleRead := c.DefaultPolicy.e.HasPolicy(GroupRead, HttpV1, Read)
+	roleRead := c.Enforcer.HasPolicy(GroupRead, HttpV1, Read)
 	if !roleRead {
-		c.DefaultPolicy.e.AddPolicy(GroupRead, HttpV1, Read)
+		c.Enforcer.AddPolicy(GroupRead, HttpV1, Read)
 		logger.Infow("InitPermission", GroupRead, "权限初始化成功")
 	}
-	roleWrite := c.DefaultPolicy.e.HasPolicy(GroupWrite, HttpV1, Write)
+	roleWrite := c.Enforcer.HasPolicy(GroupWrite, HttpV1, Write)
 	if !roleWrite {
-		c.DefaultPolicy.e.AddPolicy(GroupWrite, HttpV1, Write)
+		c.Enforcer.AddPolicy(GroupWrite, HttpV1, Write)
 		logger.Infow("InitPermission", GroupWrite, "权限初始化成功")
 	}
-	roleManager := c.DefaultPolicy.e.HasPolicy(GroupManager, HttpManager, Admin)
+	roleManager := c.Enforcer.HasPolicy(GroupManager, HttpManager, Admin)
 	if !roleManager {
-		c.DefaultPolicy.e.AddPolicy(GroupManager, HttpManager, Admin)
+		c.Enforcer.AddPolicy(GroupManager, HttpManager, Admin)
 		logger.Infow("InitPermission", GroupManager, "权限初始化成功")
 	}
 
 	// 角色初始化
-	_ = c.DefaultPolicy.AddGroupingPolicy("admin", GroupManager)
+	_ = c.Enforcer.AddGroupingPolicy("admin", GroupManager)
+	err := c.Enforcer.SavePolicy()
+	if err != nil {
+		return
+	}
 
 }
 func NewCasbinModel(s2 string, s3 string, s4 string) *CasbinModel {
@@ -126,6 +129,48 @@ type Policy interface {
 	Delete(a any) bool
 }
 
+func (c *Casbin) Add(a any) bool {
+	if casbinModel, ok := a.(*CasbinModel); ok {
+		result := c.Enforcer.AddPolicy(casbinModel.Role, casbinModel.Source, casbinModel.Behavior)
+		if result {
+			err := c.Enforcer.SavePolicy()
+			if err != nil {
+				return false
+			}
+		}
+		return result
+	}
+	return false
+}
+func (c *Casbin) AddGroupingPolicy(role string, group string) bool {
+	s := c.Enforcer.AddRoleForUser(role, group)
+	if s {
+		logger.Infow("InitPermission", role+":"+group, "权限初始化成功")
+		return s
+	}
+	return false
+}
+func (c *Casbin) Update(a any) bool {
+	if _, ok := a.([]*CasbinModel); ok {
+		// 遍历集合中的每个 CasbinModel 并添加策略
+		return true
+	}
+	return false
+}
+func (c *Casbin) Delete(a any) bool {
+	if casbinModel, ok := a.(*CasbinModel); ok {
+		result := c.Enforcer.RemovePolicy(casbinModel.Role, casbinModel.Source, casbinModel.Behavior)
+		if result {
+			err := c.Enforcer.SavePolicy()
+			if err != nil {
+				return false
+			}
+		}
+		return result
+	}
+	return false
+}
+
 //func ParamsMatch(fullNameKey1 string, key2 string) bool {
 //	key1 := strings.Split(fullNameKey1, "?")[0]
 //	return util.KeyMatch2(key1, key2)
@@ -137,3 +182,45 @@ type Policy interface {
 //	name2 := args[1].(string)
 //	return ParamsMatch(name1, name2), nil
 //}
+
+// EnforcerProvider 接口定义
+type EnforcerProvider interface {
+	GetEnforcer(modelConf string) (*casbin.Enforcer, error)
+}
+
+// EtcdAdapterProvider 结构体实现 EnforcerProvider 接口
+type EtcdAdapterProvider struct {
+	etcdEndpoint []string
+	key          string
+}
+
+func (eap *EtcdAdapterProvider) GetEnforcer(modelConf string) (*casbin.Enforcer, error) {
+	adapter := etcdadapter.NewAdapter(eap.etcdEndpoint, eap.key)
+	enforcer := casbin.NewEnforcer(modelConf, adapter)
+	_ = enforcer.LoadPolicy()
+	enforcer.EnableAutoSave(true)
+	return enforcer, nil
+}
+
+// CsvAdapterProvider 结构体实现 EnforcerProvider 接口
+type CsvAdapterProvider struct {
+	csvFilePath string
+}
+
+func (cap *CsvAdapterProvider) GetEnforcer(modelConf string) (*casbin.Enforcer, error) {
+	enforcer := casbin.NewEnforcer(modelConf, cap.csvFilePath)
+	_ = enforcer.LoadPolicy()
+	// 启用自动保存选项。
+	enforcer.EnableAutoSave(true)
+	return enforcer, nil
+}
+
+func NewEnforcerProvider(conf *config.OpsLinkConfig) (EnforcerProvider, error) {
+	if len(conf.EtcdConfig.Endpoint) != 0 {
+		//etcd配置地址不为空 权限策略存入etcd中
+		return &EtcdAdapterProvider{conf.EtcdConfig.Endpoint, config.CasbinRuleKey}, nil
+	} else {
+		//etcd为空，权限策略走磁盘
+		return &CsvAdapterProvider{config.CasbinCsvPath}, nil
+	}
+}

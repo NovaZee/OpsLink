@@ -1,4 +1,4 @@
-package etcdv3
+package store
 
 import (
 	"context"
@@ -13,9 +13,6 @@ var (
 	keepaliveTime    = 30 * time.Second
 	keepaliveTimeout = 10 * time.Second
 )
-
-const CasbinRuleKey = "casbin_policy"
-const RoleKey = "role_key"
 
 type Client interface {
 	Create(ctx context.Context, key string, result string) error

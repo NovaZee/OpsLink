@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/denovo/permission/pkg"
 	"github.com/denovo/permission/pkg/casbin"
-	etcdv3 "github.com/denovo/permission/pkg/etcdv3"
+	store "github.com/denovo/permission/pkg/store"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 )
@@ -19,7 +19,7 @@ type Router struct {
 	router *gin.Engine
 	cb     *casbin.Casbin
 
-	roleClientv3 etcdv3.RoleClientInterface
+	storeService store.StoreService
 }
 
 func InitRouter(opslinkServer *pkg.OpsLinkServer) (*Router, error) {
@@ -30,7 +30,7 @@ func InitRouter(opslinkServer *pkg.OpsLinkServer) (*Router, error) {
 
 	defer engine.Run(":" + opslinkServer.Config.Server.HttpPort).Error()
 
-	router, err := NewRouter(engine, opslinkServer.Casbin, opslinkServer.Interface)
+	router, err := NewRouter(engine, opslinkServer.Casbin, opslinkServer.StoreService)
 	if err != nil {
 		return nil, err
 	}
@@ -42,11 +42,11 @@ func InitRouter(opslinkServer *pkg.OpsLinkServer) (*Router, error) {
 	return router, nil
 }
 
-func NewRouter(g *gin.Engine, ca *casbin.Casbin, back etcdv3.Interface) (*Router, error) {
+func NewRouter(g *gin.Engine, ca *casbin.Casbin, ss store.StoreService) (*Router, error) {
 	return &Router{
 		router:       g,
 		cb:           ca,
-		roleClientv3: back.RolesCfg(),
+		storeService: ss,
 	}, nil
 }
 

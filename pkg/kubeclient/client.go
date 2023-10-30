@@ -3,7 +3,7 @@ package kubeclient
 import (
 	"context"
 	"fmt"
-	config "github.com/denovo/permission/configration"
+	config "github.com/denovo/permission/config"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"

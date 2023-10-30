@@ -4,10 +4,10 @@
 package pkg
 
 import (
-	config "github.com/denovo/permission/configration"
+	config "github.com/denovo/permission/config"
 	"github.com/denovo/permission/pkg/casbin"
-	etcdv3 "github.com/denovo/permission/pkg/etcdv3"
 	kubeclient "github.com/denovo/permission/pkg/kubeclient"
+	etcdv3 "github.com/denovo/permission/pkg/store"
 	"github.com/google/wire"
 )
 

@@ -16,7 +16,7 @@ func AddPolicy(ctx *gin.Context, c *casbin.Casbin) {
 	if err != nil {
 		return
 	}
-	add := c.DefaultPolicy.Add(casbinModel)
+	add := c.Add(casbinModel)
 	if add == false {
 		ctx.JSONP(http.StatusOK, gin.H{"message": "添加重复", "status": http.StatusOK})
 		return
@@ -31,7 +31,7 @@ func DeletePolicy(ctx *gin.Context, c *casbin.Casbin) {
 	if err != nil {
 		return
 	}
-	add := c.DefaultPolicy.Delete(casbinModel)
+	add := c.Delete(casbinModel)
 	if add == false {
 		ctx.JSONP(http.StatusOK, gin.H{"message": "删除失败", "status": http.StatusOK})
 		return
@@ -46,7 +46,7 @@ func UpdatePolicy(ctx *gin.Context, c *casbin.Casbin) {
 	if err != nil {
 		return
 	}
-	add := c.DefaultPolicy.Delete(casbinModel)
+	add := c.Delete(casbinModel)
 	if add == false {
 		ctx.JSONP(http.StatusOK, gin.H{"message": "删除失败", "status": http.StatusOK})
 		return
@@ -85,7 +85,7 @@ func SignIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": ErrorParamsError, "status": http.StatusBadRequest})
 		return
 	}
-	get, err2 := r.roleClientv3.Get(ctx2, font.Name)
+	get, err2 := r.storeService.Get(ctx2, font.Name)
 	if err2 != nil || len(get) > 0 {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": font.Name + " 已存在", "status": http.StatusBadRequest})
 		return
@@ -97,13 +97,13 @@ func SignIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
 		return
 	}
 	// 成员信息存入
-	e := r.roleClientv3.Create(ctx2, newRole)
+	e := r.storeService.Create(ctx2, newRole)
 	if e != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "用户 生成失败", "status": http.StatusBadRequest})
 		return
 	}
 	// 成员权限初始化
-	_ = r.cb.DefaultPolicy.AddGroupingPolicy(newRole.Name, casbin.GroupRead)
+	_ = r.cb.AddGroupingPolicy(newRole.Name, casbin.GroupRead)
 	ctx.JSON(http.StatusOK, gin.H{"message": token, "status": http.StatusOK})
 	return
 

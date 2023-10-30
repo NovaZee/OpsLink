@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/denovo/permission/configration"
+	"github.com/denovo/permission/config"
 	"github.com/denovo/permission/pkg"
 	"github.com/denovo/permission/pkg/router"
 	"github.com/oppslink/protocol/logger"
@@ -32,6 +32,8 @@ func main() {
 }
 
 func start(c *cli.Context) error {
+	loadCsv()
+
 	var err error
 	//load config file
 	cfg, error := getCfg(c)
@@ -83,4 +85,22 @@ func getConfigString(configFile string, inConfigBody string) (string, error) {
 	}
 
 	return string(outConfigBody), nil
+}
+
+func loadCsv() {
+	filePath := "config/file/casbin_policy.csv"
+
+	// 检查文件是否存在
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		// 文件不存在，创建一个空文件
+		emptyFile, createErr := os.Create(filePath)
+		if createErr != nil {
+			fmt.Println("无法创建文件:", createErr)
+			return
+		}
+		defer emptyFile.Close()
+		fmt.Println("已创建空文件:", filePath)
+	} else {
+		fmt.Println("文件已存在:", filePath)
+	}
 }
