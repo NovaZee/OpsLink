@@ -8,6 +8,8 @@ import (
 	"github.com/oppslink/protocol/logger"
 	"github.com/urfave/cli/v2"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 var flags = []cli.Flag{
@@ -32,7 +34,6 @@ func main() {
 }
 
 func start(c *cli.Context) error {
-	loadCsv()
 
 	var err error
 	//load config file
@@ -42,18 +43,30 @@ func start(c *cli.Context) error {
 	}
 	//init logger
 	config.InitLoggerFromConfig(cfg.Logging)
+
 	//init oppslink server
 	server, err := pkg.InitializeServer(cfg)
 	if err != nil {
 		return err
 	}
-	logger.Infow("start server ", "port", cfg.Server.HttpPort)
 
 	//init http router
-	_, err = router.InitRouter(server)
-	if err != nil {
-		return err
-	}
+	go func() {
+		_, _ = router.InitRouter(server)
+	}()
+
+	logger.Infow("start server ", "port", cfg.Server.HttpPort)
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	go func() {
+		sig := <-sigChan
+		logger.Infow("exit requested, shutting down", "signal", sig)
+		server.Stop(false)
+	}()
+
+	server.Start()
 	return nil
 }
 
@@ -85,22 +98,4 @@ func getConfigString(configFile string, inConfigBody string) (string, error) {
 	}
 
 	return string(outConfigBody), nil
-}
-
-func loadCsv() {
-	filePath := "config/file/casbin_policy.csv"
-
-	// 检查文件是否存在
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		// 文件不存在，创建一个空文件
-		emptyFile, createErr := os.Create(filePath)
-		if createErr != nil {
-			fmt.Println("无法创建文件:", createErr)
-			return
-		}
-		defer emptyFile.Close()
-		fmt.Println("已创建空文件:", filePath)
-	} else {
-		fmt.Println("文件已存在:", filePath)
-	}
 }

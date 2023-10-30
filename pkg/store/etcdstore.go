@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/denovo/permission/config"
+	opsconfig "github.com/denovo/permission/config"
 	"github.com/denovo/permission/pkg/service/role"
 )
 
 type V3Store struct {
 	Backend Client
-	config  config.OpsLinkConfig
+
+	config opsconfig.EtcdConfig
 }
 
 func (r *V3Store) Create(ctx context.Context, v *role.Role) error {
@@ -101,7 +102,7 @@ func (r *V3Store) Watch(ctx context.Context, v any, a any) error {
 func convertKey(v any) (k string) {
 	switch t := v.(type) {
 	case *role.Role:
-		k = config.RoleKey + t.FrontRole.Name
+		k = opsconfig.RoleKey + t.FrontRole.Name
 		return
 	default:
 		k = fmt.Sprintf("Unhandled type: %T", v)

@@ -41,8 +41,8 @@ func initCasbin(conf *config.OpsLinkConfig) (*casbin.Casbin, error) {
 	return casbin.InitCasbin(conf)
 }
 
-func initEtcd(conf *config.OpsLinkConfig) (store.Interface, error) {
-	return store.New(conf)
+func initEtcd(conf *config.OpsLinkConfig) (store.StoreService, error) {
+	return store.NewStoreService(conf)
 }
 
 func initClientSet(conf *config.OpsLinkConfig) (*kubeclient.KubernetesClient, error) {

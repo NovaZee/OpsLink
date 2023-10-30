@@ -5,7 +5,6 @@ import (
 	"github.com/oppslink/protocol/logger"
 	"gopkg.in/yaml.v3"
 	"strings"
-	"time"
 )
 
 var (
@@ -26,9 +25,9 @@ type OpsLinkConfig struct {
 
 // EtcdConfig Etcd配置
 type EtcdConfig struct {
-	Endpoint          []string      `yaml:"endpoint"`
-	DialTimeout       int           `yaml:"dial_timeout"`
-	DialKeepAliveTime time.Duration `yaml:"dial_keep_alive_time,omitempty"`
+	Endpoint          []string `yaml:"endpoint"`
+	DialTimeout       int      `yaml:"dial_timeout"`
+	DialKeepAliveTime int      `yaml:"dial_keep_alive_time,omitempty"`
 }
 
 // ServerConfig 服务器配置

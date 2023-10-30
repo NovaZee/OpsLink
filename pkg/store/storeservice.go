@@ -16,9 +16,13 @@ type StoreService interface {
 
 // NewStoreService 创建 StoreService 实例，根据配置选择合适的存储中间件
 func NewStoreService(config *opsconfig.OpsLinkConfig) (StoreService, error) {
-	if len(config.EtcdConfig.Endpoint) != 0 {
+	if len(config.EtcdConfig.Endpoint) == 0 {
 		return &LocalStore{}, nil
 	} else {
-		return &V3Store{}, nil
+		client, err := NewClient(config)
+		if err != nil {
+			return nil, err
+		}
+		return &V3Store{Backend: client, config: config.EtcdConfig}, nil
 	}
 }

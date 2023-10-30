@@ -13,6 +13,9 @@ type OpsLinkServer struct {
 	StoreService opsstore.StoreService
 
 	KubeClientSet *kubeclient.KubernetesClient
+
+	doneChan   chan struct{}
+	closedChan chan struct{}
 }
 
 func NewOpsLinkServer(config *config.OpsLinkConfig, casbin *casbin.Casbin, store opsstore.StoreService, kcs *kubeclient.KubernetesClient) (os *OpsLinkServer, err error) {
@@ -21,6 +24,25 @@ func NewOpsLinkServer(config *config.OpsLinkConfig, casbin *casbin.Casbin, store
 		Casbin:        casbin,
 		StoreService:  store,
 		KubeClientSet: kcs,
+		closedChan:    make(chan struct{}),
 	}
 	return
+}
+
+func (server *OpsLinkServer) Start() error {
+	server.doneChan = make(chan struct{})
+
+	<-server.doneChan
+
+	close(server.closedChan)
+	return nil
+}
+
+func (server *OpsLinkServer) Stop(force bool) {
+	//todo:如果使用本地内存启动，关闭之前等待数据同步
+
+	close(server.doneChan)
+
+	// wait for fully closed
+	<-server.closedChan
 }

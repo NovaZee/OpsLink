@@ -5,6 +5,7 @@ import (
 	config "github.com/denovo/permission/config"
 	"github.com/oppslink/protocol/logger"
 	"github.com/sebastianliu/etcd-adapter"
+	"os"
 )
 
 var (
@@ -68,7 +69,7 @@ func InitCasbin(conf *config.OpsLinkConfig) (*Casbin, error) {
 		return nil, err
 	}
 	newCasbin := NewCasbin(enforcer)
-	// 初始化权限  读，写，管理
+	// init permission  read,write,manager,admin
 	newCasbin.InitPermission()
 
 	return newCasbin, nil
@@ -80,24 +81,24 @@ func (c *Casbin) InitPermission() {
 	// p, role_write, /v1, write
 	// p, role_manager, /v1/manager, owner
 
-	// 用户初始化
+	// roles init
 	roleRead := c.Enforcer.HasPolicy(GroupRead, HttpV1, Read)
 	if !roleRead {
 		c.Enforcer.AddPolicy(GroupRead, HttpV1, Read)
-		logger.Infow("InitPermission", GroupRead, "权限初始化成功")
+		logger.Infow("InitPermission", GroupRead, "read policy init success!")
 	}
 	roleWrite := c.Enforcer.HasPolicy(GroupWrite, HttpV1, Write)
 	if !roleWrite {
 		c.Enforcer.AddPolicy(GroupWrite, HttpV1, Write)
-		logger.Infow("InitPermission", GroupWrite, "权限初始化成功")
+		logger.Infow("InitPermission", GroupWrite, "write policy ini success!")
 	}
 	roleManager := c.Enforcer.HasPolicy(GroupManager, HttpManager, Admin)
 	if !roleManager {
 		c.Enforcer.AddPolicy(GroupManager, HttpManager, Admin)
-		logger.Infow("InitPermission", GroupManager, "权限初始化成功")
+		logger.Infow("InitPermission", GroupManager, "admin policy init success!")
 	}
 
-	// 角色初始化
+	// admin role init
 	_ = c.Enforcer.AddGroupingPolicy("admin", GroupManager)
 	err := c.Enforcer.SavePolicy()
 	if err != nil {
@@ -115,7 +116,7 @@ func NewCasbinModel(s2 string, s3 string, s4 string) *CasbinModel {
 
 // Casbin Casbin: usage for policy upate
 func (c *CasbinAdapter) Casbin() (*casbin.Enforcer, error) {
-	// 初始化etcd适配器
+	// Init etcd adapter
 	adapter := etcdadapter.NewAdapter(c.etcdEndpoint, c.key)
 	enforcer := casbin.NewEnforcer(c.modelConf, adapter)
 	_ = enforcer.LoadPolicy()
@@ -210,17 +211,36 @@ type CsvAdapterProvider struct {
 func (cap *CsvAdapterProvider) GetEnforcer(modelConf string) (*casbin.Enforcer, error) {
 	enforcer := casbin.NewEnforcer(modelConf, cap.csvFilePath)
 	_ = enforcer.LoadPolicy()
-	// 启用自动保存选项。
+	// enable auto save todo：is valid?
 	enforcer.EnableAutoSave(true)
 	return enforcer, nil
 }
 
 func NewEnforcerProvider(conf *config.OpsLinkConfig) (EnforcerProvider, error) {
 	if len(conf.EtcdConfig.Endpoint) != 0 {
-		//etcd配置地址不为空 权限策略存入etcd中
+		//The etcd endpoint is not null
+		//load policy from etcd
 		return &EtcdAdapterProvider{conf.EtcdConfig.Endpoint, config.CasbinRuleKey}, nil
 	} else {
-		//etcd为空，权限策略走磁盘
+		//The etcd endpoint is null Init casbin policy csv
+		//Loading policy from dist
+		loadCsv()
 		return &CsvAdapterProvider{config.CasbinCsvPath}, nil
+	}
+}
+
+func loadCsv() {
+	// check exit
+	if _, err := os.Stat(config.CasbinCsvPath); os.IsNotExist(err) {
+		// create empty file
+		emptyFile, createErr := os.Create(config.CasbinCsvPath)
+		if createErr != nil {
+			logger.Errorw("Init CSV File Error!", createErr)
+			return
+		}
+		defer emptyFile.Close()
+		logger.Infow("Init CSV File Success!")
+	} else {
+		logger.Infow("CSV File Already exits!", "path", config.CasbinCsvPath)
 	}
 }
