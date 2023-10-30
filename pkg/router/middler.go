@@ -11,6 +11,7 @@ import (
 
 // Logger Logger中间件 集成到自己的日志库
 func Logger() gin.HandlerFunc {
+
 	return func(c *gin.Context) {
 		// 执行时间
 		nowTime := time.Now()

@@ -1,55 +1,92 @@
 package router
 
 import (
-	"errors"
-	config "github.com/denovo/permission/configration"
+	"context"
+	"github.com/denovo/permission/pkg"
 	"github.com/denovo/permission/pkg/casbin"
+	etcdv3 "github.com/denovo/permission/pkg/etcdv3"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
+)
+
+const (
+	ErrorAuthCheckTokenFail    = " check fail "
+	ErrorAuthCheckTokenExpired = " token expired "
+	ErrorParamsError           = " bind params error  "
 )
 
 type Router struct {
 	router *gin.Engine
 	cb     *casbin.Casbin
+
+	roleClientv3 etcdv3.RoleClientInterface
 }
 
-func InitRouter(ca *casbin.Casbin, conf *config.Config) error {
+func InitRouter(opslinkServer *pkg.OpsLinkServer) (*Router, error) {
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = ioutil.Discard
 	engine := gin.Default()
 	engine.Use(Logger())
-	engine.Run(conf.Server.HttpPort)
-	router, err := NewRouter(engine, ca)
+
+	defer engine.Run(":" + opslinkServer.Config.Server.HttpPort).Error()
+
+	router, err := NewRouter(engine, opslinkServer.Casbin, opslinkServer.Interface)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	router.InitRouting()
-	s := engine.Run(":" + conf.Server.HttpPort).Error()
-	if len(s) != 0 {
-		return errors.New(s)
-	}
-	return nil
+
+	ctx := context.Background()
+	router.InitAdminRouting()
+	router.InitUserRouting(ctx)
+
+	return router, nil
 }
 
-func NewRouter(g *gin.Engine, ca *casbin.Casbin) (*Router, error) {
+func NewRouter(g *gin.Engine, ca *casbin.Casbin, back etcdv3.Interface) (*Router, error) {
 	return &Router{
-		router: g,
-		cb:     ca,
+		router:       g,
+		cb:           ca,
+		roleClientv3: back.RolesCfg(),
 	}, nil
 }
 
-func (r *Router) InitRouting() {
-	v1 := r.router.Group("/manager", ManagerMiddleware())
+// InitAdminRouting 管理员路由
+func (r *Router) InitAdminRouting() {
+	admin := r.router.Group("/manager")
 	{
-		v1.POST("addPolicy", func(ctx *gin.Context) {
+		admin.POST("addPolicy", func(ctx *gin.Context) {
 			AddPolicy(ctx, r.cb)
 		})
-		v1.GET("deletePolicy", func(ctx *gin.Context) {
+		admin.GET("deletePolicy", func(ctx *gin.Context) {
 			DeletePolicy(ctx, r.cb)
 		})
-		v1.POST("update", func(ctx *gin.Context) {
+		admin.POST("update", func(ctx *gin.Context) {
 		})
-		v1.GET("listRoom")
 	}
+	admin.Use(ManagerMiddleware())
+}
 
+// InitUserRouting 用户注册路由
+func (r *Router) InitUserRouting(ctxEtcd context.Context) {
+	admin := r.router.Group("/")
+	{
+		admin.POST("logIn", func(ctx *gin.Context) {
+			LogIn(ctx)
+		})
+		admin.POST("signIn", func(ctx *gin.Context) {
+			SignIn(ctx, r, ctxEtcd)
+		})
+	}
+}
+
+// InitAccessingRouting 用户访问路由
+func (r *Router) InitAccessingRouting() {
+	// 访问请求通过jwt校验->casbin校验
+	admin := r.router.Group("/v1")
+	{
+		admin.POST("index", func(ctx *gin.Context) {
+		})
+
+	}
+	admin.Use(JWT(r))
 }

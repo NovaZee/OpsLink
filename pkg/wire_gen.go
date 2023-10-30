@@ -7,24 +7,28 @@
 package pkg
 
 import (
-	"github.com/coreos/etcd/clientv3"
 	"github.com/denovo/permission/configration"
 	"github.com/denovo/permission/pkg/casbin"
-	"github.com/denovo/permission/pkg/componment"
+	"github.com/denovo/permission/pkg/etcdv3"
+	"github.com/denovo/permission/pkg/kubeclient"
 )
 
 // Injectors from wire.go:
 
-func InitializeServer(cfg *config.Config) (*OpsLinkServer, error) {
-	client, err := initCasbin(cfg)
+func InitializeServer(cfg *config.OpsLinkConfig) (*OpsLinkServer, error) {
+	casbin, err := initCasbin(cfg)
 	if err != nil {
 		return nil, err
 	}
-	casbin, err := initEtcd(cfg)
+	etcdv3Interface, err := initEtcd(cfg)
 	if err != nil {
 		return nil, err
 	}
-	opsLinkServer, err := NewOpsLinkServer(cfg, client, casbin)
+	kubernetesClient, err := initClientSet(cfg)
+	if err != nil {
+		return nil, err
+	}
+	opsLinkServer, err := NewOpsLinkServer(cfg, casbin, etcdv3Interface, kubernetesClient)
 	if err != nil {
 		return nil, err
 	}
@@ -33,10 +37,18 @@ func InitializeServer(cfg *config.Config) (*OpsLinkServer, error) {
 
 // wire.go:
 
-func initEtcd(conf *config.Config) (*casbin.Casbin, error) {
+func initCasbin(conf *config.OpsLinkConfig) (*casbin.Casbin, error) {
 	return casbin.InitCasbin(conf)
 }
 
-func initCasbin(conf *config.Config) (*clientv3.Client, error) {
-	return componment.InitEtcd(conf)
+func initEtcd(conf *config.OpsLinkConfig) (etcdv3.Interface, error) {
+	return etcdv3.New(conf)
+}
+
+func initClientSet(conf *config.OpsLinkConfig) (*kubeclient.KubernetesClient, error) {
+	clinetInterface, err := kubeclient.NewClientInterface(conf, kubeclient.K8sClientTypeKubernetes)
+	if err != nil {
+		return nil, err
+	}
+	return kubeclient.GetClientSet(clinetInterface), nil
 }

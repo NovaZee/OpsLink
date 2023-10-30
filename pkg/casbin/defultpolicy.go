@@ -2,6 +2,7 @@ package casbin
 
 import (
 	"github.com/casbin/casbin"
+	"github.com/oppslink/protocol/logger"
 )
 
 type DefaultPolicy struct {
@@ -13,6 +14,14 @@ func (c *DefaultPolicy) Add(a any) bool {
 	if casbinModel, ok := a.(*CasbinModel); ok {
 		result := c.e.AddPolicy(casbinModel.Role, casbinModel.Source, casbinModel.Behavior)
 		return result
+	}
+	return false
+}
+func (c *DefaultPolicy) AddGroupingPolicy(role string, group string) bool {
+	s := c.e.AddRoleForUser(role, group)
+	if s {
+		logger.Infow("InitPermission", role+":"+group, "权限初始化成功")
+		return s
 	}
 	return false
 }

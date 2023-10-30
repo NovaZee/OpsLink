@@ -5,23 +5,26 @@ import (
 	"github.com/oppslink/protocol/logger"
 	"gopkg.in/yaml.v3"
 	"strings"
+	"time"
 )
 
 var (
 	ErrCfgFail = errors.New("config parse error")
 )
 
-type Config struct {
+type OpsLinkConfig struct {
 	EtcdConfig EtcdConfig      `yaml:"etcd"`
 	Server     ServerConfig    `yaml:"server"`
 	Logging    LoggingConfig   `yaml:"logging,omitempty"`
 	CMPath     CasbinModelPath `yaml:"casbin_path,omitempty"`
+	Kubernetes Kubernetes      `yaml:"kubernetes,omitempty"`
 }
 
 // EtcdConfig Etcd配置
 type EtcdConfig struct {
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
+	Endpoint          []string      `yaml:"endpoint"`
+	DialTimeout       int           `yaml:"dial_timeout"`
+	DialKeepAliveTime time.Duration `yaml:"dial_keep_alive_time,omitempty"`
 }
 
 // ServerConfig 服务器配置
@@ -32,21 +35,33 @@ type ServerConfig struct {
 	WriteTimeout int64  `yaml:"write_timeout,omitempty"`
 }
 
+// Kubernetes a K8s specific struct to hold config
+type Kubernetes struct {
+	K8sAPIRoot string `json:"k8s_api_root"`
+	Kubeconfig string `json:"kubeconfig"`
+	NodeName   string `json:"node_name"`
+}
+
 // LoggingConfig 日志配置
 type LoggingConfig struct {
 	logger.Config `yaml:",inline"`
 }
 
-var DefaultConfig = Config{
+var DefaultConfig = OpsLinkConfig{
 	EtcdConfig: EtcdConfig{
-		Host: "127.0.0.1",
-		Port: "2379",
+		Endpoint:    []string{"127.0.0.1:2379"},
+		DialTimeout: 5,
 	},
 	Server: ServerConfig{
 		RunMode:      "dev",
 		HttpPort:     "8080",
 		ReadTimeout:  60,
 		WriteTimeout: 60,
+	},
+	Kubernetes: Kubernetes{
+		K8sAPIRoot: "",
+		Kubeconfig: "",
+		NodeName:   "",
 	},
 	CMPath: CasbinModelPath{
 		ModelPath: "/media/denovo/data1/go/OpsLink/OpsLink/configration/cfg/rbac_model.conf",
@@ -58,7 +73,7 @@ type CasbinModelPath struct {
 	ModelPath string `yaml:"model_path,omitempty"`
 }
 
-func NewConfig(confString string, strictMode bool) (*Config, error) {
+func NewConfig(confString string, strictMode bool) (*OpsLinkConfig, error) {
 	cfg := DefaultConfig
 	if confString != "" {
 		decoder := yaml.NewDecoder(strings.NewReader(confString))

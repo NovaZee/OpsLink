@@ -5,6 +5,7 @@ import (
 	"github.com/denovo/permission/configration"
 	"github.com/denovo/permission/pkg"
 	"github.com/denovo/permission/pkg/router"
+	"github.com/oppslink/protocol/logger"
 	"github.com/urfave/cli/v2"
 	"os"
 )
@@ -31,26 +32,30 @@ func main() {
 }
 
 func start(c *cli.Context) error {
-	//定义config文件进行配置
+	var err error
+	//load config file
 	cfg, error := getCfg(c)
 	if error != nil {
 		return error
 	}
-	//初始化日志
+	//init logger
 	config.InitLoggerFromConfig(cfg.Logging)
-	//初始化程序
+	//init oppslink server
 	server, err := pkg.InitializeServer(cfg)
 	if err != nil {
 		return err
 	}
-	error = router.InitRouter(server.Casbin, cfg)
-	if error != nil {
-		return error
+	logger.Infow("start server ", "port", cfg.Server.HttpPort)
+
+	//init http router
+	_, err = router.InitRouter(server)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-func getCfg(c *cli.Context) (*config.Config, error) {
+func getCfg(c *cli.Context) (*config.OpsLinkConfig, error) {
 	confString, err := getConfigString(c.String("config"), c.String("config-body"))
 	if err != nil {
 		return nil, err

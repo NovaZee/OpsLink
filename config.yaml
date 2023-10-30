@@ -9,8 +9,11 @@ server:
   # write time out /S
   write_timeout: 60
 etcd:
-  host: "127.0.0.1"
-  port: "2379"
+  endpoint:
+    - "http://127.0.0.1:2379"
+  dial_timeout: 5
+kubernetes:
+  kubeconfig: '/media/denovo/data1/go/OpsLink/OpsLink/denovo.yaml'
 logging:
   level: info
   json: false

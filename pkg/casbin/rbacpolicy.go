@@ -9,7 +9,7 @@ type RbacPolicy struct {
 	e *casbin.Enforcer
 }
 
-func (c *RbacPolicy) Add(a any) bool {
+func (c *RbacPolicy) AddGroupingPolicy(role string, group string) bool {
 	return false
 }
 func (c *RbacPolicy) Update(a any) bool {
