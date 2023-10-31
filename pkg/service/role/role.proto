@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package yourprotobufpackage; // 替换为实际的包名
+
+message FrontRoleMessage {
+string name = 1;
+string password = 2;
+}
+
+message RoleMessage {
+int64 id = 1;
+FrontRoleMessage front_role = 2;
+}

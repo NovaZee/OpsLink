@@ -12,6 +12,7 @@ var (
 )
 
 const CasbinCsvPath = "./config/file/casbin_policy.csv"
+const LocalStorePath = "./config/file/role.txt"
 const CasbinRuleKey = "casbin_policy"
 const RoleKey = "role_key/"
 
