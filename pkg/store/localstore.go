@@ -27,6 +27,7 @@ func NewLocalStore() *LocalStore {
 		DistPath: config.LocalStorePath,
 		Role:     make(map[roleName]*role.Role),
 		lock:     sync.RWMutex{},
+		dataSync: make(chan struct{}),
 	}
 
 	localStore.loadDistFile()
@@ -68,6 +69,19 @@ func (ls *LocalStore) loadDistFile() {
 		defer emptyFile.Close()
 		logger.Infow("Load Roles File Success!")
 	} else {
-		logger.Infow("Load Roles File Success!", "path", config.CasbinCsvPath)
+		//todo：Marshal 二进制
+		logger.Infow("Load Roles File Success!", "path", ls.DistPath)
 	}
+}
+
+func (ls *LocalStore) dealSyncData() {
+	go func() {
+
+	}()
+}
+
+func (ls *LocalStore) Stop() {
+	go func() {
+
+	}()
 }
