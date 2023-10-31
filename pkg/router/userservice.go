@@ -38,6 +38,7 @@ func LogIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
 	}
 	ctx.JSON(http.StatusOK, gin.H{"message": token, "status": http.StatusOK})
 	return
+
 }
 
 // SignIn 注册
