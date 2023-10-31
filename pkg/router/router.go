@@ -27,8 +27,7 @@ func InitRouter(opslinkServer *pkg.OpsLinkServer) (*Router, error) {
 	gin.DefaultWriter = ioutil.Discard
 	engine := gin.Default()
 	engine.Use(Logger())
-
-	defer engine.Run(":" + opslinkServer.Config.Server.HttpPort).Error()
+	engine.GET("/vv")
 
 	router, err := NewRouter(engine, opslinkServer.Casbin, opslinkServer.StoreService)
 	if err != nil {
@@ -36,9 +35,9 @@ func InitRouter(opslinkServer *pkg.OpsLinkServer) (*Router, error) {
 	}
 
 	ctx := context.Background()
-	router.InitAdminRouting()
+	router.InitPolicyRouting()
 	router.InitUserRouting(ctx)
-
+	engine.Run(":" + opslinkServer.Config.Server.HttpPort).Error()
 	return router, nil
 }
 
@@ -50,8 +49,8 @@ func NewRouter(g *gin.Engine, ca *casbin.Casbin, ss store.StoreService) (*Router
 	}, nil
 }
 
-// InitAdminRouting 管理员路由
-func (r *Router) InitAdminRouting() {
+// InitPolicyRouting InitAdminRouting 管理员路由
+func (r *Router) InitPolicyRouting() {
 	admin := r.router.Group("/manager")
 	{
 		admin.POST("addPolicy", func(ctx *gin.Context) {
@@ -71,7 +70,7 @@ func (r *Router) InitUserRouting(ctxEtcd context.Context) {
 	admin := r.router.Group("/")
 	{
 		admin.POST("logIn", func(ctx *gin.Context) {
-			LogIn(ctx)
+			LogIn(ctx, r, ctxEtcd)
 		})
 		admin.POST("signIn", func(ctx *gin.Context) {
 			SignIn(ctx, r, ctxEtcd)

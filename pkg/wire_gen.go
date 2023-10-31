@@ -20,7 +20,7 @@ func InitializeServer(cfg *config.OpsLinkConfig) (*OpsLinkServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	etcdv3Interface, err := initEtcd(cfg)
+	storeService, err := initStore(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func InitializeServer(cfg *config.OpsLinkConfig) (*OpsLinkServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	opsLinkServer, err := NewOpsLinkServer(cfg, casbin, etcdv3Interface, kubernetesClient)
+	opsLinkServer, err := NewOpsLinkServer(cfg, casbin, storeService, kubernetesClient)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func initCasbin(conf *config.OpsLinkConfig) (*casbin.Casbin, error) {
 	return casbin.InitCasbin(conf)
 }
 
-func initEtcd(conf *config.OpsLinkConfig) (store.StoreService, error) {
+func initStore(conf *config.OpsLinkConfig) (store.StoreService, error) {
 	return store.NewStoreService(conf)
 }
 

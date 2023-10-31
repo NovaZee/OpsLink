@@ -13,7 +13,7 @@ var (
 
 const CasbinCsvPath = "./config/file/casbin_policy.csv"
 const CasbinRuleKey = "casbin_policy"
-const RoleKey = "role_key"
+const RoleKey = "role_key/"
 
 type OpsLinkConfig struct {
 	EtcdConfig EtcdConfig      `yaml:"etcd"`

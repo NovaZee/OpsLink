@@ -67,7 +67,10 @@ func (r *V3Store) Get(ctx context.Context, k string) ([]*role.Role, error) {
 	var roles []*role.Role
 	for _, kv := range get {
 		var r *role.Role
-		// fmt.Printf("键：%s，值：%s\n", kv.Key, kv.Value)
+		err3 := json.Unmarshal(kv.Value, &r)
+		if err3 != nil {
+			return nil, err3
+		}
 		if err2 := json.Unmarshal(kv.Value, r); err != nil {
 			return nil, err2
 		}
@@ -103,6 +106,9 @@ func convertKey(v any) (k string) {
 	switch t := v.(type) {
 	case *role.Role:
 		k = opsconfig.RoleKey + t.FrontRole.Name
+		return
+	case string:
+		k = opsconfig.RoleKey + t
 		return
 	default:
 		k = fmt.Sprintf("Unhandled type: %T", v)
