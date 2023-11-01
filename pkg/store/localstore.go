@@ -3,18 +3,18 @@ package store
 import (
 	"context"
 	"github.com/denovo/permission/config"
+	pb "github.com/denovo/permission/pkg/protoc"
 	"github.com/denovo/permission/pkg/service/role"
+	"github.com/golang/protobuf/proto"
 	"github.com/oppslink/protocol/logger"
 	"os"
 	"sync"
 )
 
-type roleName string
-
 type LocalStore struct {
 	DistPath string
 
-	Role map[roleName]*role.Role
+	Role *role.RolesSlice
 
 	lock       sync.RWMutex
 	globalLock sync.Mutex
@@ -25,7 +25,7 @@ type LocalStore struct {
 func NewLocalStore() *LocalStore {
 	localStore := &LocalStore{
 		DistPath: config.LocalStorePath,
-		Role:     make(map[roleName]*role.Role),
+		//Role:     &role.RoleMap{Roles: make(map[string]*role.RoleEntry)},
 		lock:     sync.RWMutex{},
 		dataSync: make(chan struct{}),
 	}
@@ -66,11 +66,45 @@ func (ls *LocalStore) loadDistFile() {
 			logger.Errorw("Load Roles File Error!", createErr)
 			return
 		}
+		ls.WriteData()
 		defer emptyFile.Close()
 		logger.Infow("Load Roles File Success!")
 	} else {
 		//todo：Marshal 二进制
+		ls.ReadData()
 		logger.Infow("Load Roles File Success!", "path", ls.DistPath)
+	}
+}
+func (ls *LocalStore) ReadData() {
+	serializedData, err := os.ReadFile(ls.DistPath)
+	if err != nil {
+		// 处理错误
+		return
+	}
+	// 反序列化二进制数据
+	rs := &pb.RolesSlice{}
+	err = proto.Unmarshal(serializedData, rs)
+	if err != nil {
+		// 处理错误
+		return
+	}
+	println(rs.String())
+}
+
+func (ls *LocalStore) WriteData() {
+	newRole1 := role.NewRole("1", "2")
+	newRole2 := role.NewRole("3", "4")
+	slice := role.NewSlice(newRole1, newRole2)
+	// 序列化RoleMap消息为二进制数据
+	serializedRoleMap, err := proto.Marshal(slice)
+	if err != nil {
+		// 处理错误
+	}
+
+	err = os.WriteFile(ls.DistPath, serializedRoleMap, 0644)
+	if err != nil {
+		// 处理错误
+		return
 	}
 }
 

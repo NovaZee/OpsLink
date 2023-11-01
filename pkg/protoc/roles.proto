@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package protoc;
+
+option go_package = "./";
+
+message Role {
+  int64 id = 1;
+  string name = 2;
+  string password = 3;
+}
+
+message RolesSlice {
+  repeated Role roles = 1;
+}

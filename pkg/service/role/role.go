@@ -6,40 +6,50 @@ import (
 	"time"
 )
 
-type FrontRole struct {
-	Name     string `json:"name" yaml:"name"`
-	Password string `json:"password" yaml:"password"`
+type RolesSlice struct {
+	Roles []*Role `protobuf:"bytes,1,rep,name=roles,proto3" json:"roles"`
 }
 
 type Role struct {
-	Id        int64 `json:"id" yaml:"id"`
-	FrontRole `json:"front_role" yaml:"front_role"`
-	mu        *sync.Mutex
+	Id int64 `protobuf:"varint,1,opt,name=id,proto3" json:"id" yaml:"id"`
+
+	Name     string `protobuf:"bytes,2,opt,name=name,proto3" json:"name" yaml:"name"`
+	Password string `protobuf:"bytes,3,opt,name=password,proto3" json:"password" yaml:"password"`
+
+	mu *sync.Mutex
 }
 
-func NewRole(frontRole FrontRole) (role *Role) {
+func (r RolesSlice) Reset() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r RolesSlice) String() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r RolesSlice) ProtoMessage() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func NewRole(name, password string) (role *Role) {
 	role = &Role{
-		FrontRole: frontRole,
+		Name:     name,
+		Password: password,
 	}
 	rand.Seed(time.Now().UnixNano())
 	role.Id = rand.Int63()
 	return
 }
 
-// 实现 Message 接口的 Reset 方法
-func (r *Role) Reset() {
-	// 在此方法中重置 Role 结构的字段
-}
-
-// 实现 Message 接口的 String 方法
-func (r *Role) String() string {
-	// 返回 Role 结构的字符串表示形式
-	// 通常用于调试目的
-	return "Role as a string"
-}
-
-// 实现 Message 接口的 ProtoMessage 方法
-func (r *Role) ProtoMessage() {
-	// 在此方法中返回 Role 结构的 proto.Message
-	// 通常是消息自身，因此返回 r 即可
+func NewSlice(roles ...*Role) *RolesSlice {
+	slices := make([]*Role, 0, 100)
+	for _, role := range roles {
+		slices = append(slices, role)
+	}
+	return &RolesSlice{
+		Roles: slices,
+	}
 }

@@ -105,7 +105,7 @@ func (r *V3Store) Watch(ctx context.Context, v any, a any) error {
 func convertKey(v any) (k string) {
 	switch t := v.(type) {
 	case *role.Role:
-		k = opsconfig.RoleKey + t.FrontRole.Name
+		k = opsconfig.RoleKey + t.Name
 		return
 	case string:
 		k = opsconfig.RoleKey + t

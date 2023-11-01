@@ -11,7 +11,7 @@ import (
 
 // LogIn 登录
 func LogIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
-	var font role.FrontRole
+	var font role.Role
 	if err := ctx.ShouldBind(&font); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": ErrorParamsError, "status": http.StatusBadRequest})
 		return
@@ -43,7 +43,7 @@ func LogIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
 
 // SignIn 注册
 func SignIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
-	var font role.FrontRole
+	var font role.Role
 	if err := ctx.ShouldBind(&font); err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, ErrorParamsError)
 		return
@@ -57,7 +57,7 @@ func SignIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
 		ErrorResponse(ctx, http.StatusBadRequest, get[0].Name+" 已存在")
 		return
 	}
-	newRole := role.NewRole(font)
+	newRole := role.NewRole(font.Name, font.Password)
 	token, err := util.GenerateToken(newRole.Id, newRole.Name)
 	if err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, "token 生成失败")
