@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"github.com/denovo/permission/config"
-	pb "github.com/denovo/permission/pkg/protoc"
+	opslink "github.com/denovo/permission/pkg/protoc/opslink"
 	"github.com/denovo/permission/pkg/service/role"
 	"github.com/golang/protobuf/proto"
 	"github.com/oppslink/protocol/logger"
@@ -22,17 +22,20 @@ type LocalStore struct {
 	dataSync chan struct{}
 }
 
-func NewLocalStore() *LocalStore {
+func NewLocalStore() (*LocalStore, error) {
 	localStore := &LocalStore{
 		DistPath: config.LocalStorePath,
-		//Role:     &role.RoleMap{Roles: make(map[string]*role.RoleEntry)},
+		Role:     &role.RolesSlice{Roles: []*role.Role{}},
 		lock:     sync.RWMutex{},
 		dataSync: make(chan struct{}),
 	}
 
-	localStore.loadDistFile()
+	err := localStore.loadDistFile()
+	if err != nil {
+		return nil, err
+	}
 
-	return localStore
+	return localStore, nil
 }
 
 func (ls *LocalStore) Create(ctx context.Context, v *role.Role) error {
@@ -55,7 +58,7 @@ func (ls *LocalStore) List(ctx context.Context, key string) ([]*role.Role, error
 	return nil, nil
 }
 
-func (ls *LocalStore) loadDistFile() {
+func (ls *LocalStore) loadDistFile() error {
 	ls.lock.Lock()
 	defer ls.lock.Unlock()
 
@@ -64,48 +67,46 @@ func (ls *LocalStore) loadDistFile() {
 		emptyFile, createErr := os.Create(ls.DistPath)
 		if createErr != nil {
 			logger.Errorw("Load Roles File Error!", createErr)
-			return
+			return createErr
 		}
-		ls.WriteData()
+		//ls.WriteData()
 		defer emptyFile.Close()
 		logger.Infow("Load Roles File Success!")
 	} else {
-		//todo：Marshal 二进制
-		ls.ReadData()
+		err := ls.ReadData()
+		if err != nil {
+			return err
+		}
 		logger.Infow("Load Roles File Success!", "path", ls.DistPath)
 	}
+	return nil
 }
-func (ls *LocalStore) ReadData() {
+func (ls *LocalStore) ReadData() error {
 	serializedData, err := os.ReadFile(ls.DistPath)
 	if err != nil {
-		// 处理错误
-		return
+		return err
 	}
 	// 反序列化二进制数据
-	rs := &pb.RolesSlice{}
+	rs := &opslink.RolesSlice{}
 	err = proto.Unmarshal(serializedData, rs)
 	if err != nil {
-		// 处理错误
-		return
+		return err
 	}
-	println(rs.String())
+	ls.ConvertRoles(rs)
+	return nil
 }
 
-func (ls *LocalStore) WriteData() {
-	newRole1 := role.NewRole("1", "2")
-	newRole2 := role.NewRole("3", "4")
-	slice := role.NewSlice(newRole1, newRole2)
+func (ls *LocalStore) WriteData(rs *role.RolesSlice) error {
 	// 序列化RoleMap消息为二进制数据
-	serializedRoleMap, err := proto.Marshal(slice)
+	serializedRoleMap, err := proto.Marshal(rs)
 	if err != nil {
-		// 处理错误
+		return err
 	}
-
 	err = os.WriteFile(ls.DistPath, serializedRoleMap, 0644)
 	if err != nil {
-		// 处理错误
-		return
+		return err
 	}
+	return nil
 }
 
 func (ls *LocalStore) dealSyncData() {
@@ -118,4 +119,16 @@ func (ls *LocalStore) Stop() {
 	go func() {
 
 	}()
+}
+
+// ConvertRoles pb struct convert to runtime role struct
+func (ls *LocalStore) ConvertRoles(pbRoles *opslink.RolesSlice) *LocalStore {
+	for _, r := range pbRoles.GetRoles() {
+		ls.Role.Roles = append(ls.Role.Roles, &role.Role{
+			Name:     r.GetName(),
+			Password: r.GetPassword(),
+			Id:       r.GetId(),
+		})
+	}
+	return ls
 }
