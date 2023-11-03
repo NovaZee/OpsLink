@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	opsconfig "github.com/denovo/permission/config"
 	"github.com/denovo/permission/pkg/service/role"
 )
@@ -16,7 +15,7 @@ type V3Store struct {
 }
 
 func (r *V3Store) Create(ctx context.Context, v *role.Role) error {
-	key := convertKey(v)
+	key := ConvertKey(v)
 	result, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -30,7 +29,7 @@ func (r *V3Store) Create(ctx context.Context, v *role.Role) error {
 
 func (r *V3Store) Update(ctx context.Context, old *role.Role, new *role.Role) (*role.Role, error) {
 	//TODO implement me
-	getKey := convertKey(old)
+	getKey := ConvertKey(old)
 	getResp, err := r.Get(ctx, getKey)
 	if err != nil {
 		return nil, err
@@ -52,7 +51,7 @@ func (r *V3Store) Update(ctx context.Context, old *role.Role, new *role.Role) (*
 }
 
 func (r *V3Store) Delete(ctx context.Context, v any) (int64, error) {
-	key := convertKey(v)
+	key := ConvertKey(v)
 	i, err := r.Backend.Delete(ctx, key)
 	if err != nil {
 		return 0, nil
@@ -61,7 +60,7 @@ func (r *V3Store) Delete(ctx context.Context, v any) (int64, error) {
 }
 
 func (r *V3Store) Get(ctx context.Context, k string) ([]*role.Role, error) {
-	k1 := convertKey(k)
+	k1 := ConvertKey(k)
 	get, err := r.Backend.Get(ctx, k1)
 	// 处理获取的结果
 	var roles []*role.Role
@@ -100,18 +99,4 @@ func (r *V3Store) List(ctx context.Context, key string) ([]*role.Role, error) {
 func (r *V3Store) Watch(ctx context.Context, v any, a any) error {
 	//TODO implement me
 	panic("implement me")
-}
-
-func convertKey(v any) (k string) {
-	switch t := v.(type) {
-	case *role.Role:
-		k = opsconfig.RoleKey + t.Name
-		return
-	case string:
-		k = opsconfig.RoleKey + t
-		return
-	default:
-		k = fmt.Sprintf("Unhandled type: %T", v)
-		return
-	}
 }

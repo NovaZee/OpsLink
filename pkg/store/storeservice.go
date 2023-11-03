@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	opsconfig "github.com/denovo/permission/config"
 	"github.com/denovo/permission/pkg/service/role"
 )
@@ -28,5 +29,19 @@ func NewStoreService(config *opsconfig.OpsLinkConfig) (StoreService, error) {
 			return nil, err
 		}
 		return &V3Store{Backend: client, config: config.EtcdConfig}, nil
+	}
+}
+
+func ConvertKey(v any) (k string) {
+	switch t := v.(type) {
+	case *role.Role:
+		k = opsconfig.RoleKey + t.Name
+		return
+	case string:
+		k = opsconfig.RoleKey + t
+		return
+	default:
+		k = fmt.Sprintf("Unhandled type: %T", v)
+		return
 	}
 }

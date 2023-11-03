@@ -14,7 +14,7 @@ import (
 type LocalStore struct {
 	DistPath string
 
-	Role *role.RolesSlice
+	Roles *role.RolesSlice
 
 	lock       sync.RWMutex
 	globalLock sync.Mutex
@@ -25,7 +25,7 @@ type LocalStore struct {
 func NewLocalStore() (*LocalStore, error) {
 	localStore := &LocalStore{
 		DistPath: config.LocalStorePath,
-		Role:     &role.RolesSlice{Roles: []*role.Role{}},
+		Roles:    &role.RolesSlice{Roles: []*role.Role{}},
 		lock:     sync.RWMutex{},
 		dataSync: make(chan struct{}),
 	}
@@ -38,16 +38,39 @@ func NewLocalStore() (*LocalStore, error) {
 	return localStore, nil
 }
 
-func (ls *LocalStore) Create(ctx context.Context, v *role.Role) error {
+func (ls *LocalStore) Create(_ context.Context, v *role.Role) error {
+	ls.lock.Lock()
+	defer ls.lock.Unlock()
+	ls.Roles.Roles = append(ls.Roles.Roles, v)
 	return nil
 }
 
-func (ls *LocalStore) Update(ctx context.Context, old *role.Role, new *role.Role) (*role.Role, error) {
-	return nil, nil
+func (ls *LocalStore) Update(_ context.Context, _ *role.Role, new *role.Role) (*role.Role, error) {
+	var uname = new.Name
+	for i, r := range ls.Roles.Roles {
+		if r.Name == uname {
+			ls.Roles.Roles[i] = new
+			break
+		}
+	}
+	return new, nil
 }
 
-func (ls *LocalStore) Delete(ctx context.Context, v any) (int64, error) {
-	return 0, nil
+func (ls *LocalStore) Delete(_ context.Context, v any) (int64, error) {
+	roles := v.(*role.Role)
+	var uname = roles.Name
+	var result int64
+	for i, r := range ls.Roles.Roles {
+		if r.Name == uname {
+			last := len(ls.Roles.Roles) - 1
+			//target moved to end
+			ls.Roles.Roles[i], ls.Roles.Roles[last] = ls.Roles.Roles[last], ls.Roles.Roles[i]
+			ls.Roles.Roles = ls.Roles.Roles[:len(ls.Roles.Roles)-1]
+			result += 1
+			break
+		}
+	}
+	return result, nil
 }
 
 func (ls *LocalStore) Get(ctx context.Context, k string) ([]*role.Role, error) {
@@ -124,7 +147,7 @@ func (ls *LocalStore) Stop() {
 // ConvertRoles pb struct convert to runtime role struct
 func (ls *LocalStore) ConvertRoles(pbRoles *opslink.RolesSlice) *LocalStore {
 	for _, r := range pbRoles.GetRoles() {
-		ls.Role.Roles = append(ls.Role.Roles, &role.Role{
+		ls.Roles.Roles = append(ls.Roles.Roles, &role.Role{
 			Name:     r.GetName(),
 			Password: r.GetPassword(),
 			Id:       r.GetId(),
