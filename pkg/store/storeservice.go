@@ -11,7 +11,7 @@ type StoreService interface {
 	Create(ctx context.Context, v *role.Role) error
 	Update(ctx context.Context, v *role.Role, a *role.Role) (*role.Role, error)
 	Delete(ctx context.Context, v any) (int64, error)
-	Get(ctx context.Context, k string) ([]*role.Role, error)
+	Get(ctx context.Context, k string) (*role.Role, error)
 	List(ctx context.Context, k string) ([]*role.Role, error)
 }
 

@@ -35,8 +35,8 @@ func (r *V3Store) Update(ctx context.Context, old *role.Role, new *role.Role) (*
 		return nil, err
 	}
 	// 假设键存在
-	if len(getResp) > 0 {
-		oldValue := getResp[0]
+	if getResp != nil {
+		oldValue := getResp
 		if oldValue.Password == new.Password && oldValue.Name == new.Password {
 			return oldValue, nil
 		}
@@ -59,21 +59,13 @@ func (r *V3Store) Delete(ctx context.Context, v any) (int64, error) {
 	return i, nil
 }
 
-func (r *V3Store) Get(ctx context.Context, k string) ([]*role.Role, error) {
+func (r *V3Store) Get(ctx context.Context, k string) (*role.Role, error) {
 	k1 := ConvertKey(k)
 	get, err := r.Backend.Get(ctx, k1)
 	// 处理获取的结果
-	var roles []*role.Role
-	for _, kv := range get {
-		var r *role.Role
-		err3 := json.Unmarshal(kv.Value, &r)
-		if err3 != nil {
-			return nil, err3
-		}
-		if err2 := json.Unmarshal(kv.Value, r); err != nil {
-			return nil, err2
-		}
-		roles = append(roles, r)
+	var roles *role.Role
+	if err2 := json.Unmarshal(get[0].Value, &roles); err != nil {
+		return nil, err2
 	}
 	return roles, nil
 }

@@ -20,13 +20,12 @@ func LogIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
 		ErrorResponse(ctx, http.StatusBadRequest, "参数不能为空")
 		return
 	}
-	get, err2 := r.storeService.Get(ctx2, font.Name)
+	r2, err2 := r.storeService.Get(ctx2, font.Name)
 
-	if err2 != nil || len(get) == 0 {
+	if err2 != nil || r2 != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, font.Name+" 不存在")
 		return
 	}
-	r2 := get[0]
 	if font.Name != r2.Name || font.Password != r2.Password {
 		ErrorResponse(ctx, http.StatusBadRequest, r2.Name+" 账号密码不匹配!")
 		return
@@ -52,9 +51,9 @@ func SignIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
 		ErrorResponse(ctx, http.StatusBadRequest, "参数不能为空")
 		return
 	}
-	get, err2 := r.storeService.Get(ctx2, font.Name)
-	if err2 != nil || len(get) > 0 {
-		ErrorResponse(ctx, http.StatusBadRequest, get[0].Name+" 已存在")
+	r2, err2 := r.storeService.Get(ctx2, font.Name)
+	if err2 != nil || r2 != nil {
+		ErrorResponse(ctx, http.StatusBadRequest, r2.Name+" 已存在")
 		return
 	}
 	newRole := role.NewRole(font.Name, font.Password)

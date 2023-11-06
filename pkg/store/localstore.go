@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"github.com/denovo/permission/config"
 	opslink "github.com/denovo/permission/pkg/protoc/opslink"
 	"github.com/denovo/permission/pkg/service/role"
@@ -14,20 +15,27 @@ import (
 type LocalStore struct {
 	DistPath string
 
-	Roles *role.RolesSlice
+	//todo:结构缩减，重置protoc文件
+	LocalRoles *role.RolesSlice
 
 	lock       sync.RWMutex
 	globalLock sync.Mutex
 
-	dataSync chan struct{}
+	dataSync chan int
 }
+
+const (
+	put = iota
+	Update
+	Delete
+)
 
 func NewLocalStore() (*LocalStore, error) {
 	localStore := &LocalStore{
-		DistPath: config.LocalStorePath,
-		Roles:    &role.RolesSlice{Roles: []*role.Role{}},
-		lock:     sync.RWMutex{},
-		dataSync: make(chan struct{}),
+		DistPath:   config.LocalStorePath,
+		LocalRoles: &role.RolesSlice{Roles: []*role.Role{}},
+		lock:       sync.RWMutex{},
+		dataSync:   make(chan int, 10),
 	}
 
 	err := localStore.loadDistFile()
@@ -41,44 +49,64 @@ func NewLocalStore() (*LocalStore, error) {
 func (ls *LocalStore) Create(_ context.Context, v *role.Role) error {
 	ls.lock.Lock()
 	defer ls.lock.Unlock()
-	ls.Roles.Roles = append(ls.Roles.Roles, v)
+	ls.LocalRoles.Roles = append(ls.LocalRoles.Roles, v)
+	ls.dataSync <- 1
 	return nil
 }
 
 func (ls *LocalStore) Update(_ context.Context, _ *role.Role, new *role.Role) (*role.Role, error) {
+	ls.lock.Lock()
+	defer ls.lock.Unlock()
 	var uname = new.Name
-	for i, r := range ls.Roles.Roles {
+	for i, r := range ls.LocalRoles.Roles {
 		if r.Name == uname {
-			ls.Roles.Roles[i] = new
+			ls.LocalRoles.Roles[i] = new
 			break
 		}
 	}
+	ls.dataSync <- 1
 	return new, nil
 }
 
 func (ls *LocalStore) Delete(_ context.Context, v any) (int64, error) {
+	ls.lock.Lock()
+	defer ls.lock.Unlock()
 	roles := v.(*role.Role)
 	var uname = roles.Name
 	var result int64
-	for i, r := range ls.Roles.Roles {
+	for i, r := range ls.LocalRoles.Roles {
 		if r.Name == uname {
-			last := len(ls.Roles.Roles) - 1
+			last := len(ls.LocalRoles.Roles) - 1
 			//target moved to end
-			ls.Roles.Roles[i], ls.Roles.Roles[last] = ls.Roles.Roles[last], ls.Roles.Roles[i]
-			ls.Roles.Roles = ls.Roles.Roles[:len(ls.Roles.Roles)-1]
+			ls.LocalRoles.Roles[i], ls.LocalRoles.Roles[last] = ls.LocalRoles.Roles[last], ls.LocalRoles.Roles[i]
+			ls.LocalRoles.Roles = ls.LocalRoles.Roles[:len(ls.LocalRoles.Roles)-1]
 			result += 1
 			break
 		}
 	}
+	if result != 0 {
+		ls.dataSync <- 1
+		return result, nil
+	}
 	return result, nil
 }
 
-func (ls *LocalStore) Get(ctx context.Context, k string) ([]*role.Role, error) {
-	return nil, nil
+func (ls *LocalStore) Get(_ context.Context, name string) (*role.Role, error) {
+	ls.lock.Lock()
+	defer ls.lock.Unlock()
+	var roles = ls.LocalRoles.Roles
+	for i := range roles {
+		if roles[i].Name == name {
+			return roles[i], nil
+		}
+	}
+	return nil, errors.New("key is not exits")
 }
 
-func (ls *LocalStore) List(ctx context.Context, key string) ([]*role.Role, error) {
-	return nil, nil
+func (ls *LocalStore) List(_ context.Context, key string) ([]*role.Role, error) {
+	ls.lock.Lock()
+	defer ls.lock.Unlock()
+	return ls.LocalRoles.Roles, nil
 }
 
 func (ls *LocalStore) loadDistFile() error {
@@ -104,6 +132,7 @@ func (ls *LocalStore) loadDistFile() error {
 	}
 	return nil
 }
+
 func (ls *LocalStore) ReadData() error {
 	serializedData, err := os.ReadFile(ls.DistPath)
 	if err != nil {
@@ -134,7 +163,7 @@ func (ls *LocalStore) WriteData(rs *role.RolesSlice) error {
 
 func (ls *LocalStore) dealSyncData() {
 	go func() {
-
+		<-ls.dataSync
 	}()
 }
 
@@ -147,7 +176,7 @@ func (ls *LocalStore) Stop() {
 // ConvertRoles pb struct convert to runtime role struct
 func (ls *LocalStore) ConvertRoles(pbRoles *opslink.RolesSlice) *LocalStore {
 	for _, r := range pbRoles.GetRoles() {
-		ls.Roles.Roles = append(ls.Roles.Roles, &role.Role{
+		ls.LocalRoles.Roles = append(ls.LocalRoles.Roles, &role.Role{
 			Name:     r.GetName(),
 			Password: r.GetPassword(),
 			Id:       r.GetId(),
