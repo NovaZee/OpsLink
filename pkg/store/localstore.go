@@ -24,7 +24,7 @@ type LocalStore struct {
 	dataSyncCounter int
 	dataSync        chan int
 
-	ss service.Signal
+	service.Signal
 }
 
 const (
