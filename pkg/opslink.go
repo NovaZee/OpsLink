@@ -40,7 +40,8 @@ func (server *OpsLinkServer) Start() error {
 
 func (server *OpsLinkServer) Stop(force bool) {
 	//todo:如果使用本地内存启动，关闭之前等待数据同步
-
+	//Before closing, check if there is any unsynchronized data.
+	server.StoreService.Stop()
 	close(server.doneChan)
 
 	// wait for fully closed

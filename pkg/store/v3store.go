@@ -14,6 +14,16 @@ type V3Store struct {
 	config opsconfig.EtcdConfig
 }
 
+func (r *V3Store) Stop() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *V3Store) Start() {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (r *V3Store) Create(ctx context.Context, v *role.Role) error {
 	key := ConvertKey(v)
 	result, err := json.Marshal(v)

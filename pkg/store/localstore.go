@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/denovo/permission/config"
 	opslink "github.com/denovo/permission/pkg/protoc/opslink"
+	"github.com/denovo/permission/pkg/service"
 	"github.com/denovo/permission/pkg/service/role"
 	"github.com/golang/protobuf/proto"
 	"github.com/oppslink/protocol/logger"
@@ -18,10 +19,12 @@ type LocalStore struct {
 	//todo:结构缩减，重置protoc文件
 	LocalRoles *role.RolesSlice
 
-	lock       sync.RWMutex
-	globalLock sync.Mutex
+	lock            sync.RWMutex
+	globalLock      sync.Mutex
+	dataSyncCounter int
+	dataSync        chan int
 
-	dataSync chan int
+	ss service.Signal
 }
 
 const (
@@ -32,10 +35,11 @@ const (
 
 func NewLocalStore() (*LocalStore, error) {
 	localStore := &LocalStore{
-		DistPath:   config.LocalStorePath,
-		LocalRoles: &role.RolesSlice{Roles: []*role.Role{}},
-		lock:       sync.RWMutex{},
-		dataSync:   make(chan int, 10),
+		DistPath:        config.LocalStorePath,
+		LocalRoles:      &role.RolesSlice{Roles: []*role.Role{}},
+		lock:            sync.RWMutex{},
+		dataSyncCounter: 0,
+		dataSync:        make(chan int, 10),
 	}
 
 	err := localStore.loadDistFile()
@@ -43,7 +47,18 @@ func NewLocalStore() (*LocalStore, error) {
 		return nil, err
 	}
 
+	go localStore.dataSyncHandler()
+
 	return localStore, nil
+}
+
+func (ls *LocalStore) Stop() {
+	ls.lock.Lock()
+	defer ls.lock.Unlock()
+	if ls.dataSyncCounter != 0 {
+		ls.WriteData()
+	}
+	ls.dataSyncCounter = 0
 }
 
 func (ls *LocalStore) Create(_ context.Context, v *role.Role) error {
@@ -148,9 +163,9 @@ func (ls *LocalStore) ReadData() error {
 	return nil
 }
 
-func (ls *LocalStore) WriteData(rs *role.RolesSlice) error {
+func (ls *LocalStore) WriteData() error {
 	// 序列化RoleMap消息为二进制数据
-	serializedRoleMap, err := proto.Marshal(rs)
+	serializedRoleMap, err := proto.Marshal(ls.LocalRoles)
 	if err != nil {
 		return err
 	}
@@ -161,16 +176,22 @@ func (ls *LocalStore) WriteData(rs *role.RolesSlice) error {
 	return nil
 }
 
-func (ls *LocalStore) dealSyncData() {
-	go func() {
-		<-ls.dataSync
-	}()
-}
-
-func (ls *LocalStore) Stop() {
-	go func() {
-
-	}()
+func (ls *LocalStore) dataSyncHandler() {
+	for {
+		select {
+		case <-ls.dataSync:
+			ls.dataSyncCounter++
+			if ls.dataSyncCounter == 10 {
+				ls.lock.Lock()
+				err := ls.WriteData()
+				if err != nil {
+					return
+				}
+				ls.dataSyncCounter = 0
+				ls.lock.Unlock()
+			}
+		}
+	}
 }
 
 // ConvertRoles pb struct convert to runtime role struct
