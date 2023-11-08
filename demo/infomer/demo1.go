@@ -105,3 +105,5 @@ func delete(obj interface{}) {
 	}
 	fmt.Println("delete a pod:", pod.Name)
 }
+
+//todo:https://github.com/rancher/lasso 控制器框架
