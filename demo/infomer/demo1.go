@@ -107,3 +107,4 @@ func delete(obj interface{}) {
 }
 
 //todo:https://github.com/rancher/lasso 控制器框架
+//todo：https://kubernetes.io/docs/concepts/overview/components/#addons
