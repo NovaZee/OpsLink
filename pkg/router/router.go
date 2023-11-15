@@ -27,7 +27,7 @@ func InitRouter(opslinkServer *pkg.OpsLinkServer) (*Router, error) {
 	gin.DefaultWriter = ioutil.Discard
 	engine := gin.Default()
 	engine.Use(Logger())
-	engine.GET("/vv")
+	engine.GET("/validate")
 
 	router, err := NewRouter(engine, opslinkServer.Casbin, opslinkServer.StoreService)
 	if err != nil {
