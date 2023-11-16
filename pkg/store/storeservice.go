@@ -5,7 +5,7 @@ import (
 	"fmt"
 	opsconfig "github.com/denovo/permission/config"
 	"github.com/denovo/permission/pkg/service"
-	"github.com/denovo/permission/pkg/service/role"
+	"github.com/denovo/permission/protoc/pb"
 )
 
 type StoreService interface {

@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/denovo/permission/pkg/util"
+	"github.com/oppslink/protocol/logger"
 	"net/http"
 	"time"
 )
@@ -30,9 +31,23 @@ func (a *AuthMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request, next 
 	if err != nil {
 		return
 	}
-	token.
-		//处理token
-		//处理权限
-		//加入对应群组
-		next.ServeHTTP(w, r)
+	if token.Valid() != nil {
+		return
+	}
+
+	next.ServeHTTP(w, r)
+}
+
+// LoggerWithRole logger util
+func LoggerWithRole(l logger.Logger, id int64, name string) logger.Logger {
+	values := make([]interface{}, 0, 4)
+	if name != "" {
+		values = append(values, "roleName", name)
+	}
+	if id != 0 {
+		values = append(values, "roleId", id)
+	}
+	values = append(values, "connectionTime", time.Now())
+	// enable sampling per participant
+	return l.WithValues(values...)
 }

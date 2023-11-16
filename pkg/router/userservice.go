@@ -3,8 +3,8 @@ package router
 import (
 	"context"
 	"github.com/denovo/permission/pkg/casbin"
-	"github.com/denovo/permission/pkg/service/role"
 	"github.com/denovo/permission/pkg/util"
+	"github.com/denovo/permission/protoc/pb"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -56,7 +56,11 @@ func SignIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
 		ErrorResponse(ctx, http.StatusBadRequest, r2.Name+" 已存在")
 		return
 	}
-	newRole := role.NewRole(font.Name, font.Password)
+
+	newRole := &role.Role{
+		Name:     font.Name,
+		Password: font.Password,
+	}
 	token, err := util.GenerateToken(newRole.Id, newRole.Name)
 	if err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, "token 生成失败")

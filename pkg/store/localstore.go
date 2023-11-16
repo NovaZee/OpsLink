@@ -4,9 +4,8 @@ import (
 	"context"
 	"errors"
 	"github.com/denovo/permission/config"
-	opslink "github.com/denovo/permission/pkg/protoc/opslink"
 	"github.com/denovo/permission/pkg/service"
-	"github.com/denovo/permission/pkg/service/role"
+	"github.com/denovo/permission/protoc/pb"
 	"github.com/golang/protobuf/proto"
 	"github.com/oppslink/protocol/logger"
 	"os"
@@ -154,7 +153,7 @@ func (ls *LocalStore) ReadData() error {
 		return err
 	}
 	// 反序列化二进制数据
-	rs := &opslink.RolesSlice{}
+	rs := &role.RolesSlice{}
 	err = proto.Unmarshal(serializedData, rs)
 	if err != nil {
 		return err
@@ -195,13 +194,9 @@ func (ls *LocalStore) dataSyncHandler() {
 }
 
 // ConvertRoles pb struct convert to runtime role struct
-func (ls *LocalStore) ConvertRoles(pbRoles *opslink.RolesSlice) *LocalStore {
+func (ls *LocalStore) ConvertRoles(pbRoles *role.RolesSlice) *LocalStore {
 	for _, r := range pbRoles.GetRoles() {
-		ls.LocalRoles.Roles = append(ls.LocalRoles.Roles, &role.Role{
-			Name:     r.GetName(),
-			Password: r.GetPassword(),
-			Id:       r.GetId(),
-		})
+		ls.LocalRoles.Roles = append(ls.LocalRoles.Roles, r)
 	}
 	return ls
 }
