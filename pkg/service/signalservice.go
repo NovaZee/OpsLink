@@ -1,13 +1,18 @@
 package service
 
 import (
+	"github.com/denovo/permission/pkg/service/role"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+	"sync"
 )
 
 type SignalService struct {
-	upgrader websocket.Upgrader
+	upgrader     websocket.Upgrader
+	onlineMember map[string]*role.Role
+
+	sync sync.RWMutex
 }
 
 func NewSignalService() *SignalService {

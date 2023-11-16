@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.31.0
 // 	protoc        v3.6.1
-// source: roles.proto
+// source: role.proto
 
-package opslink
+package role
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -20,6 +20,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// The Role message corresponds to the Role struct in Go.
 type Role struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -27,13 +28,13 @@ type Role struct {
 
 	Id       int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name     string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Password string `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
+	Password string `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"` // 注意: Go 结构体中的互斥锁 'mu' 在 Protobuf 中不需要表示
 }
 
 func (x *Role) Reset() {
 	*x = Role{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_roles_proto_msgTypes[0]
+		mi := &file_role_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -46,7 +47,7 @@ func (x *Role) String() string {
 func (*Role) ProtoMessage() {}
 
 func (x *Role) ProtoReflect() protoreflect.Message {
-	mi := &file_roles_proto_msgTypes[0]
+	mi := &file_role_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -59,7 +60,7 @@ func (x *Role) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Role.ProtoReflect.Descriptor instead.
 func (*Role) Descriptor() ([]byte, []int) {
-	return file_roles_proto_rawDescGZIP(), []int{0}
+	return file_role_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Role) GetId() int64 {
@@ -83,6 +84,7 @@ func (x *Role) GetPassword() string {
 	return ""
 }
 
+// The RolesSlice message corresponds to the RolesSlice struct in Go.
 type RolesSlice struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -94,7 +96,7 @@ type RolesSlice struct {
 func (x *RolesSlice) Reset() {
 	*x = RolesSlice{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_roles_proto_msgTypes[1]
+		mi := &file_role_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -107,7 +109,7 @@ func (x *RolesSlice) String() string {
 func (*RolesSlice) ProtoMessage() {}
 
 func (x *RolesSlice) ProtoReflect() protoreflect.Message {
-	mi := &file_roles_proto_msgTypes[1]
+	mi := &file_role_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -120,7 +122,7 @@ func (x *RolesSlice) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RolesSlice.ProtoReflect.Descriptor instead.
 func (*RolesSlice) Descriptor() ([]byte, []int) {
-	return file_roles_proto_rawDescGZIP(), []int{1}
+	return file_role_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *RolesSlice) GetRoles() []*Role {
@@ -130,41 +132,40 @@ func (x *RolesSlice) GetRoles() []*Role {
 	return nil
 }
 
-var File_roles_proto protoreflect.FileDescriptor
+var File_role_proto protoreflect.FileDescriptor
 
-var file_roles_proto_rawDesc = []byte{
-	0x0a, 0x0b, 0x72, 0x6f, 0x6c, 0x65, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x06, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x63, 0x22, 0x46, 0x0a, 0x04, 0x52, 0x6f, 0x6c, 0x65, 0x12, 0x0e, 0x0a,
-	0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a,
-	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d,
-	0x65, 0x12, 0x1a, 0x0a, 0x08, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x18, 0x03, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x08, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x22, 0x30, 0x0a,
-	0x0a, 0x52, 0x6f, 0x6c, 0x65, 0x73, 0x53, 0x6c, 0x69, 0x63, 0x65, 0x12, 0x22, 0x0a, 0x05, 0x72,
-	0x6f, 0x6c, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x63, 0x2e, 0x52, 0x6f, 0x6c, 0x65, 0x52, 0x05, 0x72, 0x6f, 0x6c, 0x65, 0x73, 0x42,
-	0x0b, 0x5a, 0x09, 0x2e, 0x2f, 0x6f, 0x70, 0x73, 0x6c, 0x69, 0x6e, 0x6b, 0x62, 0x06, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x33,
+var file_role_proto_rawDesc = []byte{
+	0x0a, 0x0a, 0x72, 0x6f, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x04, 0x72, 0x6f,
+	0x6c, 0x65, 0x22, 0x46, 0x0a, 0x04, 0x52, 0x6f, 0x6c, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61,
+	0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x1a,
+	0x0a, 0x08, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x08, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x22, 0x2e, 0x0a, 0x0a, 0x52, 0x6f,
+	0x6c, 0x65, 0x73, 0x53, 0x6c, 0x69, 0x63, 0x65, 0x12, 0x20, 0x0a, 0x05, 0x72, 0x6f, 0x6c, 0x65,
+	0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0a, 0x2e, 0x72, 0x6f, 0x6c, 0x65, 0x2e, 0x52,
+	0x6f, 0x6c, 0x65, 0x52, 0x05, 0x72, 0x6f, 0x6c, 0x65, 0x73, 0x42, 0x0a, 0x5a, 0x08, 0x2f, 0x70,
+	0x62, 0x3b, 0x72, 0x6f, 0x6c, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
-	file_roles_proto_rawDescOnce sync.Once
-	file_roles_proto_rawDescData = file_roles_proto_rawDesc
+	file_role_proto_rawDescOnce sync.Once
+	file_role_proto_rawDescData = file_role_proto_rawDesc
 )
 
-func file_roles_proto_rawDescGZIP() []byte {
-	file_roles_proto_rawDescOnce.Do(func() {
-		file_roles_proto_rawDescData = protoimpl.X.CompressGZIP(file_roles_proto_rawDescData)
+func file_role_proto_rawDescGZIP() []byte {
+	file_role_proto_rawDescOnce.Do(func() {
+		file_role_proto_rawDescData = protoimpl.X.CompressGZIP(file_role_proto_rawDescData)
 	})
-	return file_roles_proto_rawDescData
+	return file_role_proto_rawDescData
 }
 
-var file_roles_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_roles_proto_goTypes = []interface{}{
-	(*Role)(nil),       // 0: protoc.Role
-	(*RolesSlice)(nil), // 1: protoc.RolesSlice
+var file_role_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_role_proto_goTypes = []interface{}{
+	(*Role)(nil),       // 0: role.Role
+	(*RolesSlice)(nil), // 1: role.RolesSlice
 }
-var file_roles_proto_depIdxs = []int32{
-	0, // 0: protoc.RolesSlice.roles:type_name -> protoc.Role
+var file_role_proto_depIdxs = []int32{
+	0, // 0: role.RolesSlice.roles:type_name -> role.Role
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -172,13 +173,13 @@ var file_roles_proto_depIdxs = []int32{
 	0, // [0:1] is the sub-list for field type_name
 }
 
-func init() { file_roles_proto_init() }
-func file_roles_proto_init() {
-	if File_roles_proto != nil {
+func init() { file_role_proto_init() }
+func file_role_proto_init() {
+	if File_role_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_roles_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_role_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Role); i {
 			case 0:
 				return &v.state
@@ -190,7 +191,7 @@ func file_roles_proto_init() {
 				return nil
 			}
 		}
-		file_roles_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_role_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*RolesSlice); i {
 			case 0:
 				return &v.state
@@ -207,18 +208,18 @@ func file_roles_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_roles_proto_rawDesc,
+			RawDescriptor: file_role_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_roles_proto_goTypes,
-		DependencyIndexes: file_roles_proto_depIdxs,
-		MessageInfos:      file_roles_proto_msgTypes,
+		GoTypes:           file_role_proto_goTypes,
+		DependencyIndexes: file_role_proto_depIdxs,
+		MessageInfos:      file_role_proto_msgTypes,
 	}.Build()
-	File_roles_proto = out.File
-	file_roles_proto_rawDesc = nil
-	file_roles_proto_goTypes = nil
-	file_roles_proto_depIdxs = nil
+	File_role_proto = out.File
+	file_role_proto_rawDesc = nil
+	file_role_proto_goTypes = nil
+	file_role_proto_depIdxs = nil
 }

@@ -23,15 +23,16 @@ func (a *AuthMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request, next 
 
 	var authToken string
 	authToken = r.FormValue(tokenParam)
-	if authToken != "" {
-		token, err := util.ParseToken(tokenParam)
-		if err != nil {
-			return
-		}
+	if authToken == "" {
+		return
+	}
+	token, err := util.ParseToken(tokenParam)
+	if err != nil {
+		return
+	}
+	token.
 		//处理token
 		//处理权限
 		//加入对应群组
-	}
-
-	next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r)
 }
