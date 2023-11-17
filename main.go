@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/denovo/permission/config"
-	"github.com/denovo/permission/pkg"
 	"github.com/denovo/permission/pkg/router"
+	"github.com/denovo/permission/pkg/service"
 	"github.com/oppslink/protocol/logger"
 	"github.com/urfave/cli/v2"
 	"os"
@@ -45,7 +45,7 @@ func start(c *cli.Context) error {
 	config.InitLoggerFromConfig(cfg.Logging)
 
 	//init oppslink server
-	server, err := pkg.InitializeServer(cfg)
+	server, err := service.InitializeServer(cfg)
 	if err != nil {
 		return err
 	}

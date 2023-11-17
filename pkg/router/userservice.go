@@ -6,7 +6,9 @@ import (
 	"github.com/denovo/permission/pkg/util"
 	"github.com/denovo/permission/protoc/pb"
 	"github.com/gin-gonic/gin"
+	"math/rand"
 	"net/http"
+	"time"
 )
 
 // LogIn 登录
@@ -61,6 +63,8 @@ func SignIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
 		Name:     font.Name,
 		Password: font.Password,
 	}
+	rand.Seed(time.Now().UnixNano())
+	newRole.Id = rand.Int63()
 	token, err := util.GenerateToken(newRole.Id, newRole.Name)
 	if err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, "token 生成失败")

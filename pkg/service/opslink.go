@@ -1,16 +1,19 @@
-package pkg
+package service
 
 import (
 	config "github.com/denovo/permission/config"
 	"github.com/denovo/permission/pkg/casbin"
 	"github.com/denovo/permission/pkg/kubeclient"
 	opsstore "github.com/denovo/permission/pkg/store"
+	"github.com/gorilla/mux"
+	"net/http"
 )
 
 type OpsLinkServer struct {
-	Config       *config.OpsLinkConfig
-	Casbin       *casbin.Casbin
-	StoreService opsstore.StoreService
+	Config        *config.OpsLinkConfig
+	Casbin        *casbin.Casbin
+	StoreService  opsstore.StoreService
+	SignalService *SignalService
 
 	KubeClientSet *kubeclient.KubernetesClient
 
@@ -18,14 +21,32 @@ type OpsLinkServer struct {
 	closedChan chan struct{}
 }
 
-func NewOpsLinkServer(config *config.OpsLinkConfig, casbin *casbin.Casbin, store opsstore.StoreService, kcs *kubeclient.KubernetesClient) (os *OpsLinkServer, err error) {
+func NewOpsLinkServer(config *config.OpsLinkConfig,
+	casbin *casbin.Casbin,
+	store opsstore.StoreService,
+	kcs *kubeclient.KubernetesClient,
+	signal *SignalService,
+) (os *OpsLinkServer, err error) {
 	os = &OpsLinkServer{
 		Config:        config,
 		Casbin:        casbin,
 		StoreService:  store,
 		KubeClientSet: kcs,
+		SignalService: signal,
 		closedChan:    make(chan struct{}),
 	}
+
+	r := mux.NewRouter()
+	auth := &AuthMiddleware{}
+	m := &MuxHandler{
+		handler: auth,
+		next:    signal.ServeHTTP,
+	}
+	r.HandleFunc("/signal/validate", m.ServeHTTP)
+	http.Handle("/", r)
+	go func() {
+		http.ListenAndServe(":8085", r)
+	}()
 	return
 }
 

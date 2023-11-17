@@ -18,7 +18,7 @@ const (
 type AuthMiddleware struct{}
 
 func (a *AuthMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	if r.URL != nil && r.URL.Path == "/rtc/validate" {
+	if r.URL != nil && r.URL.Path == "/signal/validate" {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 	}
 
@@ -27,7 +27,7 @@ func (a *AuthMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request, next 
 	if authToken == "" {
 		return
 	}
-	token, err := util.ParseToken(tokenParam)
+	token, err := util.ParseToken(authToken)
 	if err != nil {
 		return
 	}

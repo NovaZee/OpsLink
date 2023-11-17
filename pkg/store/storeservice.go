@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	opsconfig "github.com/denovo/permission/config"
-	"github.com/denovo/permission/pkg/service"
+	"github.com/denovo/permission/protoc"
 	"github.com/denovo/permission/protoc/pb"
 )
 
@@ -14,7 +14,7 @@ type StoreService interface {
 	Delete(ctx context.Context, v any) (int64, error)
 	Get(ctx context.Context, k string) (*role.Role, error)
 	List(ctx context.Context, k string) ([]*role.Role, error)
-	service.Signal
+	protoc.Signal
 }
 
 // NewStoreService 创建 StoreService 实例，根据配置选择合适的存储方式

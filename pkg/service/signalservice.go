@@ -5,9 +5,9 @@ import (
 	"github.com/denovo/permission/protoc/pb"
 	"github.com/gorilla/websocket"
 	"github.com/oppslink/protocol/logger"
+	"github.com/pkg/errors"
 	"log"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -21,13 +21,15 @@ type SignalService struct {
 }
 
 func NewSignalService() *SignalService {
-	return &SignalService{
+
+	signalService := &SignalService{
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
 		},
 		onlineMember: make(map[int64]*role.Role, 100),
 	}
+	return signalService
 }
 
 //写消息发送的pb
@@ -56,6 +58,24 @@ func (s *SignalService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		conn.Close()
 		sLogger.Infow("Ending WS connection", "closeTime", time.Now())
 	}()
+
+	for {
+		messageType, message, err := conn.ReadMessage()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		log.Printf("Received message: %s\n", message)
+
+		// 在这里处理收到的 WebSocket 消息
+		// ...
+
+		// 发送响应消息
+		if err := conn.WriteMessage(messageType, message); err != nil {
+			log.Println(err)
+			return
+		}
+	}
 	//参数校验
 	//http升级为websocket
 	//建立连接
@@ -77,9 +97,9 @@ func (s *SignalService) validateConn(r *http.Request) (int64, string, error) {
 	if err != nil {
 		return 0, "", err
 	}
-	i, err := strconv.ParseInt(parseToken.Id, 0, 64)
-	if err != nil {
-		return 0, "", err
+	if parseToken.UserID != 0 {
+		return 0, "", errors.New("角色ID有误！")
 	}
-	return i, parseToken.UserName, nil
+
+	return parseToken.UserID, parseToken.UserName, nil
 }

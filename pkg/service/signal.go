@@ -2,11 +2,6 @@ package service
 
 import "net/http"
 
-type Signal interface {
-	Stop()
-	Start()
-}
-
 type MuxHandler struct {
 	handler Handler
 

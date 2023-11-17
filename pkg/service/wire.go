@@ -1,7 +1,7 @@
 //go:build wireinject
 // +build wireinject
 
-package pkg
+package service
 
 import (
 	config "github.com/denovo/permission/config"
@@ -16,6 +16,7 @@ func InitializeServer(cfg *config.OpsLinkConfig) (*OpsLinkServer, error) {
 		initCasbin,
 		initStore,
 		initClientSet,
+		initSignalService,
 		NewOpsLinkServer,
 	)
 	return &OpsLinkServer{}, nil
@@ -27,6 +28,10 @@ func initCasbin(conf *config.OpsLinkConfig) (*casbin.Casbin, error) {
 
 func initStore(conf *config.OpsLinkConfig) (store.StoreService, error) {
 	return store.NewStoreService(conf)
+}
+
+func initSignalService(conf *config.OpsLinkConfig) (*SignalService, error) {
+	return NewSignalService(), nil
 }
 
 func initClientSet(conf *config.OpsLinkConfig) (*kubeclient.KubernetesClient, error) {

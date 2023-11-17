@@ -2,9 +2,8 @@ package store
 
 import (
 	"context"
-	"errors"
 	"github.com/denovo/permission/config"
-	"github.com/denovo/permission/pkg/service"
+	"github.com/denovo/permission/protoc"
 	"github.com/denovo/permission/protoc/pb"
 	"github.com/golang/protobuf/proto"
 	"github.com/oppslink/protocol/logger"
@@ -23,7 +22,7 @@ type LocalStore struct {
 	dataSyncCounter int
 	dataSync        chan int
 
-	service.Signal
+	protoc.Signal
 }
 
 const (
@@ -114,7 +113,7 @@ func (ls *LocalStore) Get(_ context.Context, name string) (*role.Role, error) {
 			return roles[i], nil
 		}
 	}
-	return nil, errors.New("key is not exits")
+	return nil, nil
 }
 
 func (ls *LocalStore) List(_ context.Context, key string) ([]*role.Role, error) {

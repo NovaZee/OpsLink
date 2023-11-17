@@ -2,8 +2,8 @@ package router
 
 import (
 	"context"
-	"github.com/denovo/permission/pkg"
 	"github.com/denovo/permission/pkg/casbin"
+	"github.com/denovo/permission/pkg/service"
 	store "github.com/denovo/permission/pkg/store"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
@@ -22,7 +22,7 @@ type Router struct {
 	storeService store.StoreService
 }
 
-func InitRouter(opslinkServer *pkg.OpsLinkServer) (*Router, error) {
+func InitRouter(opslinkServer *service.OpsLinkServer) (*Router, error) {
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = ioutil.Discard
 	engine := gin.Default()
