@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/denovo/permission/pkg/casbin"
 	"github.com/denovo/permission/pkg/util"
-	"github.com/denovo/permission/protoc/pb"
+	"github.com/denovo/permission/protoc/model"
 	"github.com/gin-gonic/gin"
 	"math/rand"
 	"net/http"
@@ -13,7 +13,7 @@ import (
 
 // LogIn 登录
 func LogIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
-	var font role.Role
+	var font model.Role
 	if err := ctx.ShouldBind(&font); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": ErrorParamsError, "status": http.StatusBadRequest})
 		return
@@ -24,7 +24,7 @@ func LogIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
 	}
 	r2, err2 := r.storeService.Get(ctx2, font.Name)
 
-	if err2 != nil || r2 != nil {
+	if err2 != nil || r2 == nil {
 		ErrorResponse(ctx, http.StatusBadRequest, font.Name+" 不存在")
 		return
 	}
@@ -44,7 +44,7 @@ func LogIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
 
 // SignIn 注册
 func SignIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
-	var font role.Role
+	var font model.Role
 	if err := ctx.ShouldBind(&font); err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, ErrorParamsError)
 		return
@@ -59,7 +59,7 @@ func SignIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
 		return
 	}
 
-	newRole := &role.Role{
+	newRole := &model.Role{
 		Name:     font.Name,
 		Password: font.Password,
 	}

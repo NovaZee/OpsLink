@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/denovo/permission/config"
 	"github.com/denovo/permission/protoc"
-	"github.com/denovo/permission/protoc/pb"
+	"github.com/denovo/permission/protoc/model"
 	"github.com/golang/protobuf/proto"
 	"github.com/oppslink/protocol/logger"
 	"os"
@@ -15,7 +15,7 @@ type LocalStore struct {
 	DistPath string
 
 	//todo:结构缩减，重置protoc文件
-	LocalRoles *role.RolesSlice
+	LocalRoles *model.RolesSlice
 
 	lock            sync.RWMutex
 	globalLock      sync.Mutex
@@ -25,16 +25,10 @@ type LocalStore struct {
 	protoc.Signal
 }
 
-const (
-	put = iota
-	Update
-	Delete
-)
-
 func NewLocalStore() (*LocalStore, error) {
 	localStore := &LocalStore{
 		DistPath:        config.LocalStorePath,
-		LocalRoles:      &role.RolesSlice{Roles: []*role.Role{}},
+		LocalRoles:      &model.RolesSlice{Roles: []*model.Role{}},
 		lock:            sync.RWMutex{},
 		dataSyncCounter: 0,
 		dataSync:        make(chan int, 10),
@@ -59,7 +53,7 @@ func (ls *LocalStore) Stop() {
 	ls.dataSyncCounter = 0
 }
 
-func (ls *LocalStore) Create(_ context.Context, v *role.Role) error {
+func (ls *LocalStore) Create(_ context.Context, v *model.Role) error {
 	ls.lock.Lock()
 	defer ls.lock.Unlock()
 	ls.LocalRoles.Roles = append(ls.LocalRoles.Roles, v)
@@ -67,7 +61,7 @@ func (ls *LocalStore) Create(_ context.Context, v *role.Role) error {
 	return nil
 }
 
-func (ls *LocalStore) Update(_ context.Context, _ *role.Role, new *role.Role) (*role.Role, error) {
+func (ls *LocalStore) Update(_ context.Context, _ *model.Role, new *model.Role) (*model.Role, error) {
 	ls.lock.Lock()
 	defer ls.lock.Unlock()
 	var uname = new.Name
@@ -84,7 +78,7 @@ func (ls *LocalStore) Update(_ context.Context, _ *role.Role, new *role.Role) (*
 func (ls *LocalStore) Delete(_ context.Context, v any) (int64, error) {
 	ls.lock.Lock()
 	defer ls.lock.Unlock()
-	roles := v.(*role.Role)
+	roles := v.(*model.Role)
 	var uname = roles.Name
 	var result int64
 	for i, r := range ls.LocalRoles.Roles {
@@ -104,7 +98,7 @@ func (ls *LocalStore) Delete(_ context.Context, v any) (int64, error) {
 	return result, nil
 }
 
-func (ls *LocalStore) Get(_ context.Context, name string) (*role.Role, error) {
+func (ls *LocalStore) Get(_ context.Context, name string) (*model.Role, error) {
 	ls.lock.Lock()
 	defer ls.lock.Unlock()
 	var roles = ls.LocalRoles.Roles
@@ -116,7 +110,7 @@ func (ls *LocalStore) Get(_ context.Context, name string) (*role.Role, error) {
 	return nil, nil
 }
 
-func (ls *LocalStore) List(_ context.Context, key string) ([]*role.Role, error) {
+func (ls *LocalStore) List(_ context.Context, key string) ([]*model.Role, error) {
 	ls.lock.Lock()
 	defer ls.lock.Unlock()
 	return ls.LocalRoles.Roles, nil
@@ -152,7 +146,7 @@ func (ls *LocalStore) ReadData() error {
 		return err
 	}
 	// 反序列化二进制数据
-	rs := &role.RolesSlice{}
+	rs := &model.RolesSlice{}
 	err = proto.Unmarshal(serializedData, rs)
 	if err != nil {
 		return err
@@ -193,7 +187,7 @@ func (ls *LocalStore) dataSyncHandler() {
 }
 
 // ConvertRoles pb struct convert to runtime role struct
-func (ls *LocalStore) ConvertRoles(pbRoles *role.RolesSlice) *LocalStore {
+func (ls *LocalStore) ConvertRoles(pbRoles *model.RolesSlice) *LocalStore {
 	for _, r := range pbRoles.GetRoles() {
 		ls.LocalRoles.Roles = append(ls.LocalRoles.Roles, r)
 	}

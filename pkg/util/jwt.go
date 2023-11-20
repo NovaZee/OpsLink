@@ -17,12 +17,12 @@ type Claims struct {
 }
 
 // GenerateToken 签发用户Token
-func GenerateToken(userID int64, role string) (string, error) {
+func GenerateToken(userID int64, roleName string) (string, error) {
 	nowTime := time.Now()
 	expireTime := nowTime.Add(180 * time.Minute)
 	claims := Claims{
 		UserID:   userID,
-		UserName: role,
+		UserName: roleName,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expireTime.Unix(),
 			Issuer:    "38384-SearchEngine",
@@ -46,7 +46,7 @@ func ParseToken(token string) (*Claims, error) {
 	return nil, err
 }
 
-func (j *Claims) RefreshToken(tokenStr string, role string) (string, error) {
+func RefreshToken(tokenStr string) (string, error) {
 	jwt.TimeFunc = func() time.Time {
 		return time.Unix(0, 0)
 	}
@@ -59,8 +59,9 @@ func (j *Claims) RefreshToken(tokenStr string, role string) (string, error) {
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		jwt.TimeFunc = time.Now
 		claims.StandardClaims.ExpiresAt = time.Now().Add(1 * time.Hour).Unix()
-		user := j.UserID
-		return GenerateToken(user, role)
+		id := claims.UserID
+		name := claims.UserName
+		return GenerateToken(id, name)
 	}
 	return "", errors.New("invalid")
 }

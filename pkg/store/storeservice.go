@@ -5,15 +5,15 @@ import (
 	"fmt"
 	opsconfig "github.com/denovo/permission/config"
 	"github.com/denovo/permission/protoc"
-	"github.com/denovo/permission/protoc/pb"
+	"github.com/denovo/permission/protoc/model"
 )
 
 type StoreService interface {
-	Create(ctx context.Context, v *role.Role) error
-	Update(ctx context.Context, v *role.Role, a *role.Role) (*role.Role, error)
+	Create(ctx context.Context, v *model.Role) error
+	Update(ctx context.Context, v *model.Role, a *model.Role) (*model.Role, error)
 	Delete(ctx context.Context, v any) (int64, error)
-	Get(ctx context.Context, k string) (*role.Role, error)
-	List(ctx context.Context, k string) ([]*role.Role, error)
+	Get(ctx context.Context, k string) (*model.Role, error)
+	List(ctx context.Context, k string) ([]*model.Role, error)
 	protoc.Signal
 }
 
@@ -36,7 +36,7 @@ func NewStoreService(config *opsconfig.OpsLinkConfig) (StoreService, error) {
 
 func ConvertKey(v any) (k string) {
 	switch t := v.(type) {
-	case *role.Role:
+	case *model.Role:
 		k = opsconfig.RoleKey + t.Name
 		return
 	case string:

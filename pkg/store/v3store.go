@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	opsconfig "github.com/denovo/permission/config"
-	"github.com/denovo/permission/protoc/pb"
+	"github.com/denovo/permission/protoc/model"
 )
 
 type V3Store struct {
@@ -24,7 +24,7 @@ func (r *V3Store) Start() {
 	panic("implement me")
 }
 
-func (r *V3Store) Create(ctx context.Context, v *role.Role) error {
+func (r *V3Store) Create(ctx context.Context, v *model.Role) error {
 	key := ConvertKey(v)
 	result, err := json.Marshal(v)
 	if err != nil {
@@ -37,7 +37,7 @@ func (r *V3Store) Create(ctx context.Context, v *role.Role) error {
 	return nil
 }
 
-func (r *V3Store) Update(ctx context.Context, old *role.Role, new *role.Role) (*role.Role, error) {
+func (r *V3Store) Update(ctx context.Context, old *model.Role, new *model.Role) (*model.Role, error) {
 	//TODO implement me
 	getKey := ConvertKey(old)
 	getResp, err := r.Get(ctx, getKey)
@@ -69,25 +69,25 @@ func (r *V3Store) Delete(ctx context.Context, v any) (int64, error) {
 	return i, nil
 }
 
-func (r *V3Store) Get(ctx context.Context, k string) (*role.Role, error) {
+func (r *V3Store) Get(ctx context.Context, k string) (*model.Role, error) {
 	k1 := ConvertKey(k)
 	get, err := r.Backend.Get(ctx, k1)
 	// 处理获取的结果
-	var roles *role.Role
+	var roles *model.Role
 	if err2 := json.Unmarshal(get[0].Value, &roles); err != nil {
 		return nil, err2
 	}
 	return roles, nil
 }
 
-func (r *V3Store) List(ctx context.Context, key string) ([]*role.Role, error) {
+func (r *V3Store) List(ctx context.Context, key string) ([]*model.Role, error) {
 	list, err := r.Backend.List(ctx, key)
 	if err != nil {
 		return nil, err
 	}
-	var roles []*role.Role
+	var roles []*model.Role
 	for _, kv := range list {
-		var r *role.Role
+		var r *model.Role
 		// fmt.Printf("键：%s，值：%s\n", kv.Key, kv.Value)
 		if err2 := json.Unmarshal(kv.Value, r); err != nil {
 			return nil, err2

@@ -16,3 +16,6 @@ type Handler interface {
 func (m MuxHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	m.handler.ServeHTTP(rw, r, m.next)
 }
+
+type MessageSink interface {
+}
