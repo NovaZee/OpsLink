@@ -25,12 +25,6 @@ type LocalStore struct {
 	protoc.Signal
 }
 
-const (
-	put = iota
-	Update
-	Delete
-)
-
 func NewLocalStore() (*LocalStore, error) {
 	localStore := &LocalStore{
 		DistPath:        config.LocalStorePath,

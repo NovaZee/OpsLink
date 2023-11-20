@@ -1,9 +1,7 @@
 package service
 
 import (
-	"github.com/denovo/permission/pkg/util"
-	"github.com/oppslink/protocol/logger"
-	"net/http"
+	"github.com/gorilla/websocket"
 	"time"
 )
 
@@ -11,43 +9,38 @@ const (
 	pingFrequency = 10 * time.Second
 	pingTimeout   = 2 * time.Second
 )
-const (
-	tokenParam = "token"
-)
 
-type AuthMiddleware struct{}
+type WsSignalConnClient struct {
+	hub *HubSet
 
-func (a *AuthMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	if r.URL != nil && r.URL.Path == "/signal/validate" {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-	}
+	conn *websocket.Conn
 
-	var authToken string
-	authToken = r.FormValue(tokenParam)
-	if authToken == "" {
-		return
-	}
-	token, err := util.ParseToken(authToken)
-	if err != nil {
-		return
-	}
-	if token.Valid() != nil {
-		return
-	}
-
-	next.ServeHTTP(w, r)
+	// Buffered channel of outbound messages.
+	send chan []byte
 }
 
-// LoggerWithRole logger util
-func LoggerWithRole(l logger.Logger, id int64, name string) logger.Logger {
-	values := make([]interface{}, 0, 4)
-	if name != "" {
-		values = append(values, "roleName", name)
+func NewWsSignalConn(hub *HubSet, conn *websocket.Conn) *WsSignalConnClient {
+	return &WsSignalConnClient{
+		hub:  hub,
+		conn: conn,
+		send: make(chan []byte, 256),
 	}
-	if id != 0 {
-		values = append(values, "roleId", id)
+}
+
+func (wsc *WsSignalConnClient) readRequest() {
+
+}
+
+func (wsc *WsSignalConnClient) writeResponse() {
+
+}
+
+func (wsc *WsSignalConnClient) pingWorker() {
+	for {
+		<-time.After(pingFrequency)
+		err := wsc.conn.WriteControl(websocket.PingMessage, []byte(""), time.Now().Add(pingTimeout))
+		if err != nil {
+			return
+		}
 	}
-	values = append(values, "connectionTime", time.Now())
-	// enable sampling per participant
-	return l.WithValues(values...)
 }

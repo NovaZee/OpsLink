@@ -2,7 +2,7 @@ package service
 
 import (
 	"github.com/denovo/permission/pkg/util"
-	"github.com/denovo/permission/protoc/pb"
+	role "github.com/denovo/permission/protoc/pb"
 	"github.com/gorilla/websocket"
 	"github.com/oppslink/protocol/logger"
 	"github.com/pkg/errors"
@@ -12,10 +12,53 @@ import (
 	"time"
 )
 
+const (
+	tokenParam = "token"
+)
+
+type AuthMiddleware struct{}
+
+func (a *AuthMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	if r.URL != nil && r.URL.Path == "/signal/validate" {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+	}
+
+	var authToken string
+	authToken = r.FormValue(tokenParam)
+	if authToken == "" {
+		return
+	}
+	token, err := util.ParseToken(authToken)
+	if err != nil {
+		return
+	}
+	if token.Valid() != nil {
+		return
+	}
+
+	next.ServeHTTP(w, r)
+}
+
+// LoggerWithRole logger util
+func LoggerWithRole(l logger.Logger, id int64, name string) logger.Logger {
+	values := make([]interface{}, 0, 4)
+	if name != "" {
+		values = append(values, "roleName", name)
+	}
+	if id != 0 {
+		values = append(values, "roleId", id)
+	}
+	values = append(values, "connectionTime", time.Now())
+	// enable sampling per participant
+	return l.WithValues(values...)
+}
+
 type SignalService struct {
 	upgrader websocket.Upgrader
 
 	onlineMember map[int64]*role.Role
+
+	hub *HubSet
 
 	sync sync.RWMutex
 }
@@ -28,7 +71,11 @@ func NewSignalService() *SignalService {
 			WriteBufferSize: 1024,
 		},
 		onlineMember: make(map[int64]*role.Role, 100),
+		hub:          newHubSet(),
 	}
+	//启动hub上下线协程
+	go signalService.hub.run()
+
 	return signalService
 }
 
@@ -54,34 +101,19 @@ func (s *SignalService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Name: name,
 	}
 	s.connected(role)
-	defer func() {
-		conn.Close()
-		sLogger.Infow("Ending WS connection", "closeTime", time.Now())
-	}()
 
-	for {
-		messageType, message, err := conn.ReadMessage()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		log.Printf("Received message: %s\n", message)
+	wsc := NewWsSignalConn(s.hub, conn)
+	wsc.hub.register <- wsc
 
-		// 在这里处理收到的 WebSocket 消息
-		// ...
-
-		// 发送响应消息
-		if err := conn.WriteMessage(messageType, message); err != nil {
-			log.Println(err)
-			return
-		}
-	}
-	//参数校验
-	//http升级为websocket
-	//建立连接
-	//处理请求
-	//处理响应下发
 	//心跳
+	go wsc.pingWorker()
+
+	//处理请求
+	go wsc.readRequest()
+	//处理响应下发
+	go wsc.writeResponse()
+
+	sLogger.Infow("Ending WS connection", "closeTime", time.Now())
 
 }
 
@@ -89,6 +121,12 @@ func (s *SignalService) connected(role *role.Role) {
 	s.sync.Lock()
 	defer s.sync.Unlock()
 	s.onlineMember[role.Id] = role
+}
+
+func (s *SignalService) disConnected(roleId int64) {
+	s.sync.Lock()
+	defer s.sync.Unlock()
+	delete(s.onlineMember, roleId)
 }
 
 func (s *SignalService) validateConn(r *http.Request) (int64, string, error) {
