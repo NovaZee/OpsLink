@@ -2,10 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/denovo/permission/configration"
-	"github.com/denovo/permission/internal"
+	"github.com/denovo/permission/config"
+	"github.com/denovo/permission/pkg/router"
+	"github.com/denovo/permission/pkg/service"
+	"github.com/oppslink/protocol/logger"
 	"github.com/urfave/cli/v2"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 var flags = []cli.Flag{
@@ -30,21 +34,43 @@ func main() {
 }
 
 func start(c *cli.Context) error {
-	//定义config文件进行配置
+
+	var err error
+	//load config file
 	cfg, error := getCfg(c)
 	if error != nil {
 		return error
 	}
-	//初始化日志
+	//init logger
 	config.InitLoggerFromConfig(cfg.Logging)
-	//初始化orm连接
-	if err := internal.InitDBConnection(cfg); err != nil {
+
+	//init oppslink server
+	server, err := service.InitializeServer(cfg)
+	if err != nil {
 		return err
 	}
+
+	//init http router
+	go func() {
+		_, _ = router.InitRouter(server)
+	}()
+
+	logger.Infow("start server ", "port", cfg.Server.HttpPort)
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	go func() {
+		sig := <-sigChan
+		logger.Infow("exit requested, shutting down", "signal", sig)
+		server.Stop(false)
+	}()
+
+	server.Start()
 	return nil
 }
 
-func getCfg(c *cli.Context) (*config.Config, error) {
+func getCfg(c *cli.Context) (*config.OpsLinkConfig, error) {
 	confString, err := getConfigString(c.String("config"), c.String("config-body"))
 	if err != nil {
 		return nil, err

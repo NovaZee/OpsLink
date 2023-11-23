@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package signal;
+
+option go_package = "/signal;signal";
+
+message SignalRequest {
+  oneof message {
+    // client triggered ping to server
+    int64 ping = 1;
+    RefreshToken renewal = 2;
+  }
+}
+
+
+
+message SignalResponse {
+  oneof message {
+    // respond to ping
+    int64 pong = 1;
+    RefreshToken renewal_resp = 2;
+  }
+}
+
+message RefreshToken {
+  string token = 1;
+}

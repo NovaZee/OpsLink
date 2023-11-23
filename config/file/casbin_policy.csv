@@ -1,0 +1,4 @@
+p, role_read, /v1, read
+p, role_write, /v1, write
+p, role_manager, /manager, owner
+g, admin, role_manager
