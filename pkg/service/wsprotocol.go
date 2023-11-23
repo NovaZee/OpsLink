@@ -12,26 +12,15 @@ import (
 )
 
 const (
-	pingFrequency = 10 * time.Second
-	pingTimeout   = 2 * time.Second
-)
-const (
+	pingTimeout = 2 * time.Second
 	// Time allowed to write a message to the peer.
 	writeWait = 10 * time.Second
-
 	// Time allowed to read the next pong message from the peer.
 	pongWait = 10 * time.Second
-
 	// Send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
-
 	// Maximum message size allowed from peer.
 	maxMessageSize = 512
-)
-
-var (
-	newline = []byte{'\n'}
-	space   = []byte{' '}
 )
 
 type WsSignalConnClient struct {
@@ -45,6 +34,8 @@ type WsSignalConnClient struct {
 	transportType int
 
 	role *model.Role
+
+	lastSignalTime int64
 
 	mu sync.Mutex
 }
@@ -60,17 +51,21 @@ func NewWsSignalConn(hub *HubSet, conn *websocket.Conn, id int64, name string) *
 			Id:   id,
 			Name: name,
 		},
+		lastSignalTime: time.Now().Unix(),
 	}
 }
 
-func (wsc *WsSignalConnClient) readRequest() (*signal.SignalRequest, int, error) {
+// ReadRequest reads data from the connection.
+// It handles special messages and passes on the rest.
+// It determines the message type (protobuf or JSON) based on the payload.
+// Returns a signal.SignalRequest message or an error.
+func (wsc *WsSignalConnClient) ReadRequest() (*signal.SignalRequest, error) {
 	for {
 		// handle special messages and pass on the rest
 		messageType, payload, err := wsc.conn.ReadMessage()
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
-
 		msg := &signal.SignalRequest{}
 		switch messageType {
 		case websocket.BinaryMessage:
@@ -82,22 +77,25 @@ func (wsc *WsSignalConnClient) readRequest() (*signal.SignalRequest, int, error)
 			}
 			// protobuf encoded
 			err := proto.Unmarshal(payload, msg)
-			return msg, len(payload), err
+			return msg, err
 		case websocket.TextMessage:
 			wsc.mu.Lock()
 			// json encoded, also write back JSON
 			wsc.transportType = 1
 			wsc.mu.Unlock()
 			err := protojson.Unmarshal(payload, msg)
-			return msg, len(payload), err
+			return msg, err
 		default:
 			logger.Debugw("unsupported message", "message", messageType)
-			return nil, len(payload), nil
+			return nil, nil
 		}
 	}
 }
 
-func (wsc *WsSignalConnClient) writeResponse(response *signal.SignalResponse) (int, error) {
+// WriteResponse writes the provided signal.SignalResponse to the connection.
+// The function determines the message type (protobuf or JSON) based on the transportType.
+// Returns the number of bytes written and any encountered error.
+func (wsc *WsSignalConnClient) WriteResponse(response *signal.SignalResponse) (int, error) {
 	var msgType int
 	var payload []byte
 	var err error
@@ -119,6 +117,12 @@ func (wsc *WsSignalConnClient) writeResponse(response *signal.SignalResponse) (i
 	return len(payload), wsc.conn.WriteMessage(msgType, payload)
 }
 
+// UpdateLastSignalTime update time for last ping.
+func (wsc *WsSignalConnClient) UpdateLastSignalTime(signalTime int64) {
+	wsc.lastSignalTime = signalTime
+}
+
+// pingWorker
 func (wsc *WsSignalConnClient) pingWorker() {
 	for {
 		<-time.After(pingPeriod)

@@ -88,8 +88,12 @@ func (s *SignalService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
 		return
 	}
+	var err error
 	token := r.FormValue(tokenParam)
-	id, name, _ := s.validateConn(token)
+	id, name, err := s.validateConn(token)
+	if err != nil {
+		logger.Debugw("validateConn", "error", err.Error())
+	}
 	// 升级连接为 WebSocket
 	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -104,35 +108,40 @@ func (s *SignalService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	//心跳
 	go wsc.pingWorker()
+
 	// 只处理心跳 和 token续期
 	//处理请求
 	go func() {
-		defer func() {
-			wsc.hub.unregister <- wsc
-			wsc.conn.Close()
-		}()
 		wsc.conn.SetReadLimit(maxMessageSize)
 		wsc.conn.SetReadDeadline(time.Now().Add(pongWait))
 		wsc.conn.SetPongHandler(func(string) error { wsc.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 		for {
-			req, _, err := wsc.readRequest()
-			if err != nil {
-				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-					logger.Warnw("error: %v", err)
+			req, errs := wsc.ReadRequest()
+			if errs != nil {
+				if websocket.IsUnexpectedCloseError(errs, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+					sLogger.Warnw("error: %v", errs)
 				}
 				break
 			}
+			if req == nil {
+				return
+			}
 			switch m := req.Message.(type) {
 			case *signal.SignalRequest_Ping:
-				wsc.writeResponse(&signal.SignalResponse{
+				wsc.UpdateLastSignalTime(m.Ping)
+				wsc.WriteResponse(&signal.SignalResponse{
 					Message: &signal.SignalResponse_Pong{
 						Pong: time.Now().UnixMilli(),
 					},
 				})
 			case *signal.SignalRequest_Renewal:
-				refreshToken, err := util.RefreshToken(m.Renewal.Token)
-				logger.Warnw("refreshToken error ", err)
-				wsc.writeResponse(&signal.SignalResponse{
+				refreshToken, err1 := s.renewal(id, m.Renewal.Token)
+				if err1 != nil {
+					sLogger.Infow("refreshToken ", "err", err1)
+					return
+				}
+				sLogger.Debugw(" refreshToken ", "id", id)
+				wsc.WriteResponse(&signal.SignalResponse{
 					Message: &signal.SignalResponse_RenewalResp{
 						RenewalResp: &signal.RefreshToken{
 							Token: refreshToken,
@@ -142,10 +151,14 @@ func (s *SignalService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}()
+
 	//处理响应下发
 	go func() {
+		ticker := time.NewTicker(3)
 		//req, count, err := wsc.readRequest()
 		defer func() {
+			sLogger.Infow("ending websocket connection", "closeTime", time.Now())
+			wsc.hub.unregister <- wsc
 			_ = wsc.conn.Close()
 		}()
 		for {
@@ -158,27 +171,30 @@ func (s *SignalService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				w, err := wsc.conn.NextWriter(websocket.TextMessage)
-				if err != nil {
+				iow, err2 := wsc.conn.NextWriter(websocket.TextMessage)
+				if err2 != nil {
 					return
 				}
-				w.Write(message)
-
+				iow.Write(message)
 				// Add queued chat messages to the current websocket message.
 				n := len(wsc.ResponseBuffer)
 				for i := 0; i < n; i++ {
-					w.Write(newline)
-					w.Write(<-wsc.ResponseBuffer)
+					iow.Write(<-wsc.ResponseBuffer)
 				}
 
-				if err := w.Close(); err != nil {
+				if err3 := iow.Close(); err != nil {
+					sLogger.Infow("io.WriteCloser ", "err", err3)
 					return
 				}
+			case <-ticker.C:
+				if time.Now().Unix()-wsc.lastSignalTime > 5 {
+					logger.Infow("websocket ping gap time out", "id", id)
+					return
+				}
+
 			}
 		}
 	}()
-
-	sLogger.Infow("Ending WS connection", "closeTime", time.Now())
 
 }
 
@@ -188,9 +204,26 @@ func (s *SignalService) validateConn(token string) (int64, string, error) {
 	if err != nil {
 		return 0, "", err
 	}
-	if parseToken.UserID != 0 {
+	if parseToken.UserID == 0 {
 		return 0, "", errors.New("角色ID有误！")
 	}
 
 	return parseToken.UserID, parseToken.UserName, nil
+}
+
+func (s *SignalService) renewal(id int64, refresh string) (string, error) {
+	token, err := util.ParseToken(refresh)
+	if err != nil {
+		return "", err
+	}
+	if id == token.UserID {
+		refreshToken, err := util.RefreshToken(refresh)
+		if err != nil {
+			return "", err
+		}
+		return refreshToken, nil
+	} else {
+		return "", errors.New("token not match！")
+	}
+
 }
