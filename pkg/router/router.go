@@ -1,7 +1,6 @@
 package router
 
 import (
-	"context"
 	"github.com/denovo/permission/pkg/casbin"
 	"github.com/denovo/permission/pkg/service"
 	store "github.com/denovo/permission/pkg/store"
@@ -34,11 +33,18 @@ func InitRouter(opslinkServer *service.OpsLinkServer) (*Router, error) {
 		return nil, err
 	}
 
-	ctx := context.Background()
-	router.InitPolicyRouting()
-	router.InitUserRouting(ctx)
+	registerHandlers(router,
+		BuildRole(),
+		BuildPolicy())
 	engine.Run(":" + opslinkServer.Config.Server.HttpPort).Error()
 	return router, nil
+}
+
+// registerHandlers 将多个处理程序注册到 Gin 路由器上
+func registerHandlers(router *Router, handlers ...Handler) {
+	for _, h := range handlers {
+		h.Register(router)
+	}
 }
 
 func NewRouter(g *gin.Engine, ca *casbin.Casbin, ss store.StoreService) (*Router, error) {
@@ -47,35 +53,6 @@ func NewRouter(g *gin.Engine, ca *casbin.Casbin, ss store.StoreService) (*Router
 		cb:           ca,
 		storeService: ss,
 	}, nil
-}
-
-// InitPolicyRouting InitAdminRouting 管理员路由
-func (r *Router) InitPolicyRouting() {
-	admin := r.router.Group("/manager")
-	{
-		admin.POST("addPolicy", func(ctx *gin.Context) {
-			AddPolicy(ctx, r.cb)
-		})
-		admin.GET("deletePolicy", func(ctx *gin.Context) {
-			DeletePolicy(ctx, r.cb)
-		})
-		admin.POST("update", func(ctx *gin.Context) {
-		})
-	}
-	admin.Use(ManagerMiddleware())
-}
-
-// InitUserRouting 用户注册路由
-func (r *Router) InitUserRouting(ctxEtcd context.Context) {
-	admin := r.router.Group("/")
-	{
-		admin.POST("logIn", func(ctx *gin.Context) {
-			LogIn(ctx, r, ctxEtcd)
-		})
-		admin.POST("signIn", func(ctx *gin.Context) {
-			SignIn(ctx, r, ctxEtcd)
-		})
-	}
 }
 
 // InitAccessingRouting 用户访问路由

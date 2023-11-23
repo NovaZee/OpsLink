@@ -11,9 +11,17 @@ import (
 	"time"
 )
 
+type RoleHandler struct {
+}
+
+func BuildRole() *RoleHandler {
+	return &RoleHandler{}
+}
+
 // LogIn 登录
-func LogIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
+func (rh *RoleHandler) LogIn(ctx *gin.Context, r *Router) {
 	var font model.Role
+	var ctx2 context.Context
 	if err := ctx.ShouldBind(&font); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": ErrorParamsError, "status": http.StatusBadRequest})
 		return
@@ -39,12 +47,12 @@ func LogIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
 	}
 	ctx.JSON(http.StatusOK, gin.H{"message": token, "status": http.StatusOK})
 	return
-
 }
 
 // SignIn 注册
-func SignIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
+func (rh *RoleHandler) SignIn(ctx *gin.Context, r *Router) {
 	var font model.Role
+	var ctx2 context.Context
 	if err := ctx.ShouldBind(&font); err != nil {
 		ErrorResponse(ctx, http.StatusBadRequest, ErrorParamsError)
 		return
@@ -80,5 +88,9 @@ func SignIn(ctx *gin.Context, r *Router, ctx2 context.Context) {
 	_ = r.cb.AddGroupingPolicy(newRole.Name, casbin.GroupRead)
 	ctx.JSON(http.StatusOK, gin.H{"message": token, "status": http.StatusOK})
 	return
+}
 
+func (rh *RoleHandler) Register(r *Router) {
+	r.router.POST("/logIn", func(ctx *gin.Context) { rh.LogIn(ctx, r) })
+	r.router.POST("/signIn", func(ctx *gin.Context) { rh.SignIn(ctx, r) })
 }
