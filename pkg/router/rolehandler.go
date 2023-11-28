@@ -91,6 +91,6 @@ func (rh *RoleHandler) SignIn(ctx *gin.Context, r *Router) {
 }
 
 func (rh *RoleHandler) Register(r *Router) {
-	r.router.POST("/logIn", func(ctx *gin.Context) { rh.LogIn(ctx, r) })
-	r.router.POST("/signIn", func(ctx *gin.Context) { rh.SignIn(ctx, r) })
+	r.Router.POST("/logIn", func(ctx *gin.Context) { rh.LogIn(ctx, r) })
+	r.Router.POST("/signIn", func(ctx *gin.Context) { rh.SignIn(ctx, r) })
 }

@@ -1,4 +1,4 @@
-package kubeclient
+package kubenates
 
 import (
 	"context"
@@ -26,7 +26,7 @@ func (kc *KubernetesClient) Apply() {
 func (kc *KubernetesClient) List(ctx context.Context, namespace string) *v1.PodList {
 	get, _ := kc.kc.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
 	for _, item := range get.Items {
-		logger.Infow("kubeclient-system", "Namespace", item.Namespace, "Name", item.GetName())
+		logger.Infow("kubenates-system", "Namespace", item.Namespace, "Name", item.GetName())
 	}
 	return get
 }

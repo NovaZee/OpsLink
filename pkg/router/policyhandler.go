@@ -59,7 +59,7 @@ func (ph *PolicyHandler) UpdatePolicy(ctx *gin.Context, c *casbin.Casbin) {
 }
 
 func (ph *PolicyHandler) Register(r *Router) {
-	admin := r.router.Group("/manager")
+	admin := r.Router.Group("/manager")
 	{
 		admin.POST("addPolicy", func(ctx *gin.Context) { ph.AddPolicy(ctx, r.cb) })
 		admin.GET("deletePolicy", func(ctx *gin.Context) { ph.DeletePolicy(ctx, r.cb) })

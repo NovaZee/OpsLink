@@ -15,10 +15,11 @@ const (
 )
 
 type Router struct {
-	router *gin.Engine
+	Router *gin.Engine
 	cb     *casbin.Casbin
 
 	storeService store.StoreService
+	handler      []Handler
 }
 
 func InitRouter(opslinkServer *service.OpsLinkServer) (*Router, error) {
@@ -32,12 +33,18 @@ func InitRouter(opslinkServer *service.OpsLinkServer) (*Router, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	registerHandlers(router,
-		BuildRole(),
-		BuildPolicy())
+	router.InitHandler(opslinkServer)
+	registerHandlers(router, router.handler...)
 	engine.Run(":" + opslinkServer.Config.Server.HttpPort).Error()
 	return router, nil
+}
+
+func (r *Router) InitHandler(opslinkServer *service.OpsLinkServer) {
+	clientSet := opslinkServer.K8sClient.Clientset
+	handlers := []Handler{
+		BuildDeployments(clientSet, opslinkServer.K8sClient.DepHandler),
+	}
+	r.handler = handlers
 }
 
 // registerHandlers 将多个处理程序注册到 Gin 路由器上
@@ -49,7 +56,7 @@ func registerHandlers(router *Router, handlers ...Handler) {
 
 func NewRouter(g *gin.Engine, ca *casbin.Casbin, ss store.StoreService) (*Router, error) {
 	return &Router{
-		router:       g,
+		Router:       g,
 		cb:           ca,
 		storeService: ss,
 	}, nil
@@ -58,7 +65,7 @@ func NewRouter(g *gin.Engine, ca *casbin.Casbin, ss store.StoreService) (*Router
 // InitAccessingRouting 用户访问路由
 func (r *Router) InitAccessingRouting() {
 	// 访问请求通过jwt校验->casbin校验
-	admin := r.router.Group("/v1")
+	admin := r.Router.Group("/v1")
 	{
 		admin.POST("index", func(ctx *gin.Context) {
 		})
