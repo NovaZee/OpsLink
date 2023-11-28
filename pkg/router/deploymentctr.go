@@ -42,10 +42,9 @@ func (dc *DeploymentController) Delete(ctx *gin.Context) {
 
 // Register 实现deployment controller 路由 框架规范
 func (dc *DeploymentController) Register(r *Router) {
-	deployments := r.Router.Group("/deployments")
+	deployments := r.Router.Group("v1/deployments").Use(JWT(r))
 	{
 		deployments.POST("list", func(ctx *gin.Context) { dc.List(ctx) })
 		deployments.POST("delete/:ns/:name", func(ctx *gin.Context) { dc.Delete(ctx) })
 	}
-	deployments.Use(JWT(r))
 }

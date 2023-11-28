@@ -42,6 +42,8 @@ func InitRouter(opslinkServer *service.OpsLinkServer) (*Router, error) {
 func (r *Router) InitHandler(opslinkServer *service.OpsLinkServer) {
 	clientSet := opslinkServer.K8sClient.Clientset
 	handlers := []Handler{
+		BuildPolicy(),
+		BuildRole(),
 		BuildDeployments(clientSet, opslinkServer.K8sClient.DepHandler),
 	}
 	r.handler = handlers

@@ -65,5 +65,5 @@ func (ph *PolicyHandler) Register(r *Router) {
 		admin.GET("deletePolicy", func(ctx *gin.Context) { ph.DeletePolicy(ctx, r.cb) })
 		admin.POST("update", func(ctx *gin.Context) {})
 	}
-	admin.Use(ManagerMiddleware())
+	//admin.Use(ManagerMiddleware())
 }
