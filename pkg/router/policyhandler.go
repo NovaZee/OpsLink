@@ -7,10 +7,15 @@ import (
 )
 
 type PolicyHandler struct {
+	cb          *casbin.Casbin
+	middlewares []gin.HandlerFunc
 }
 
-func BuildPolicy() *PolicyHandler {
-	return &PolicyHandler{}
+func BuildPolicy(cb *casbin.Casbin, middleware ...gin.HandlerFunc) *PolicyHandler {
+	return &PolicyHandler{
+		cb:          cb,
+		middlewares: middleware,
+	}
 }
 
 // AddPolicy 新增权限策略 -manager
@@ -58,12 +63,11 @@ func (ph *PolicyHandler) UpdatePolicy(ctx *gin.Context, c *casbin.Casbin) {
 	return
 }
 
-func (ph *PolicyHandler) Register(r *Router) {
-	admin := r.Router.Group("/manager")
+func (ph *PolicyHandler) Register(g *gin.Engine) {
+	admin := g.Group("/manager").Use(ph.middlewares...)
 	{
-		admin.POST("addPolicy", func(ctx *gin.Context) { ph.AddPolicy(ctx, r.cb) })
-		admin.GET("deletePolicy", func(ctx *gin.Context) { ph.DeletePolicy(ctx, r.cb) })
+		admin.POST("addPolicy", func(ctx *gin.Context) { ph.AddPolicy(ctx, ph.cb) })
+		admin.GET("deletePolicy", func(ctx *gin.Context) { ph.DeletePolicy(ctx, ph.cb) })
 		admin.POST("update", func(ctx *gin.Context) {})
 	}
-	//admin.Use(ManagerMiddleware())
 }

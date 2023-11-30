@@ -2,6 +2,7 @@ package kubenates
 
 import (
 	"github.com/denovo/permission/config"
+	"github.com/denovo/permission/pkg/kubenates/kubeservice"
 	"github.com/oppslink/protocol/logger"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/informers"
@@ -15,8 +16,8 @@ type K8sClient struct {
 	MetricsClientSet *kubernetes.Clientset
 	RestConfig       *rest.Config
 
-	DepHandler *DeploymentHandler
-	PodHandler *PodHandler
+	DepHandler *kubeservice.DeploymentService
+	PodHandler *kubeservice.PodService
 }
 
 func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
@@ -53,21 +54,21 @@ func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
 	k8sClient.Clientset = clientSet
 	k8sClient.RestConfig = config
 
-	k8sClient.InitInformer()
-
 	//init resource
 	k8sClient.initHandlers()
+
+	k8sClient.InitInformer()
 
 	return k8sClient, err
 }
 
 // initHandlers 用于初始化 DepHandler 和 PodHandler
 func (k *K8sClient) initHandlers() {
-	k.DepHandler = &DeploymentHandler{}
-	k.PodHandler = &PodHandler{}
+	k.DepHandler = kubeservice.NewDeploymentService(k.Clientset)
+	k.PodHandler = kubeservice.NewPodService(k.Clientset)
 }
 
-// NewClientSet Kubernetes客户端的接口实例
+// NewClientSet Kubernetes客户端的接口实例D
 func NewClientSet(conf *config.OpsLinkConfig) (kubernetes.Interface, error) {
 	var err error
 	kubeconfig := conf.Kubernetes.Kubeconfig
@@ -92,10 +93,10 @@ func (k *K8sClient) InitInformer() informers.SharedInformerFactory {
 	sif := informers.NewSharedInformerFactory(k.Clientset, 0)
 
 	deploymentInformer := sif.Apps().V1().Deployments()
-	deploymentInformer.Informer().AddEventHandler(k.DepHandler)
+	deploymentInformer.Informer().AddEventHandler(k.DepHandler.Di)
 
 	pods := sif.Core().V1().Pods()
-	pods.Informer().AddEventHandler(k.PodHandler)
+	pods.Informer().AddEventHandler(k.PodHandler.Pi)
 
 	sif.Start(wait.NeverStop)
 

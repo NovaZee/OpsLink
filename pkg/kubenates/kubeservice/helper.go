@@ -1,4 +1,4 @@
-package kubenates
+package kubeservice
 
 import (
 	"fmt"
