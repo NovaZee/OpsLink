@@ -16,11 +16,7 @@ func (d *DeploymentInformer) OnAdd(obj interface{}, isInInitialList bool) {
 	if dep, ok := obj.(*v1.Deployment); ok {
 		d.Add(dep)
 	}
-	// 遍历 sync.Map 并打印所有项的键值对
-	d.localCache.Range(func(key, value interface{}) bool {
-		fmt.Println("Key:", key, "Value:", value)
-		return true
-	})
+	logger.Infow("deployment informer webhook", "action", "OnAdd", "Name", obj.(*v1.Deployment).Name)
 	//ws推送
 }
 
@@ -32,6 +28,7 @@ func (d *DeploymentInformer) OnUpdate(oldObj, newObj interface{}) {
 	if err != nil {
 		logger.Warnw("deployment informer webhook", err, "action", "OnUpdate")
 	}
+	logger.Infow("deployment informer webhook", "action", "OnUpdate", "Name", newObj.(*v1.Deployment).Name)
 }
 
 // OnDelete delete event informer 当对象被删除时，将会调用这个函数。
@@ -39,11 +36,6 @@ func (d *DeploymentInformer) OnDelete(obj interface{}) {
 	if dep, ok := obj.(*v1.Deployment); ok {
 		d.Delete(dep)
 	}
-	// 遍历 sync.Map 并打印所有项的键值对
-	d.localCache.Range(func(key, value interface{}) bool {
-		fmt.Println("Key:", key, "Value:", value)
-		return true
-	})
 	logger.Infow("deployment informer webhook", "action", "OnDelete", "Name", obj.(*v1.Deployment).Name)
 }
 
