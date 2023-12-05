@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package signal;
 
-option go_package = "/signal;signal";
+option go_package = "/signal";
 
 message SignalRequest {
   oneof message {

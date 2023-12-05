@@ -6,8 +6,20 @@ import (
 	"net/http"
 )
 
+type PolicyHandler struct {
+	cb          *casbin.Casbin
+	middlewares []gin.HandlerFunc
+}
+
+func BuildPolicy(cb *casbin.Casbin, middleware ...gin.HandlerFunc) *PolicyHandler {
+	return &PolicyHandler{
+		cb:          cb,
+		middlewares: middleware,
+	}
+}
+
 // AddPolicy 新增权限策略 -manager
-func AddPolicy(ctx *gin.Context, c *casbin.Casbin) {
+func (ph *PolicyHandler) AddPolicy(ctx *gin.Context, c *casbin.Casbin) {
 	casbinModel, err := processManagerRequestParams(ctx)
 	if err != nil {
 		return
@@ -22,7 +34,7 @@ func AddPolicy(ctx *gin.Context, c *casbin.Casbin) {
 }
 
 // DeletePolicy  删除权限策略 -manager
-func DeletePolicy(ctx *gin.Context, c *casbin.Casbin) {
+func (ph *PolicyHandler) DeletePolicy(ctx *gin.Context, c *casbin.Casbin) {
 	casbinModel, err := processManagerRequestParams(ctx)
 	if err != nil {
 		return
@@ -37,7 +49,7 @@ func DeletePolicy(ctx *gin.Context, c *casbin.Casbin) {
 }
 
 // UpdatePolicy  删除权限策略 -manager
-func UpdatePolicy(ctx *gin.Context, c *casbin.Casbin) {
+func (ph *PolicyHandler) UpdatePolicy(ctx *gin.Context, c *casbin.Casbin) {
 	casbinModel, err := processManagerRequestParams(ctx)
 	if err != nil {
 		return
@@ -49,4 +61,13 @@ func UpdatePolicy(ctx *gin.Context, c *casbin.Casbin) {
 	}
 	ctx.JSONP(http.StatusOK, gin.H{"message": "删除成功", "status": http.StatusOK})
 	return
+}
+
+func (ph *PolicyHandler) Register(g *gin.Engine) {
+	admin := g.Group("/manager").Use(ph.middlewares...)
+	{
+		admin.POST("addPolicy", func(ctx *gin.Context) { ph.AddPolicy(ctx, ph.cb) })
+		admin.GET("deletePolicy", func(ctx *gin.Context) { ph.DeletePolicy(ctx, ph.cb) })
+		admin.POST("update", func(ctx *gin.Context) {})
+	}
 }

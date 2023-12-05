@@ -1,4 +1,6 @@
 p, role_read, /v1, read
 p, role_write, /v1, write
 p, role_manager, /manager, owner
+p, zf6, /manager, write
+p, zf6, /v1, read
 g, admin, role_manager

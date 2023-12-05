@@ -3,7 +3,7 @@ package service
 import (
 	config "github.com/denovo/permission/config"
 	"github.com/denovo/permission/pkg/casbin"
-	"github.com/denovo/permission/pkg/kubeclient"
+	opskube "github.com/denovo/permission/pkg/kubenates"
 	opsstore "github.com/denovo/permission/pkg/store"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -15,7 +15,7 @@ type OpsLinkServer struct {
 	StoreService  opsstore.StoreService
 	SignalService *SignalService
 
-	KubeClientSet *kubeclient.KubernetesClient
+	K8sClient *opskube.K8sClient
 
 	doneChan   chan struct{}
 	closedChan chan struct{}
@@ -24,14 +24,14 @@ type OpsLinkServer struct {
 func NewOpsLinkServer(config *config.OpsLinkConfig,
 	casbin *casbin.Casbin,
 	store opsstore.StoreService,
-	kcs *kubeclient.KubernetesClient,
+	kcs *opskube.K8sClient,
 	signal *SignalService,
 ) (os *OpsLinkServer, err error) {
 	os = &OpsLinkServer{
 		Config:        config,
 		Casbin:        casbin,
 		StoreService:  store,
-		KubeClientSet: kcs,
+		K8sClient:     kcs,
 		SignalService: signal,
 		closedChan:    make(chan struct{}),
 	}

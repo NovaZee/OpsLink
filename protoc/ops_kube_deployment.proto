@@ -1,0 +1,17 @@
+syntax = "proto3";
+import "ops_kube_pod.proto";
+
+package kube;
+
+option go_package = "/kube";
+
+message Deployment {
+  string name = 1;
+  string namespace = 2;
+  repeated int32 replicas = 3 [packed = true];
+  string images = 4;
+  bool is_complete = 5;
+  string message = 6;
+  string create_time = 7;
+  repeated Pod pods = 8;
+}

@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-// 共享的请求参数处理逻辑 -manager
+// ProcessManagerRequestParams  共享的请求参数处理逻辑 -manager
 func processManagerRequestParams(ctx *gin.Context) (*casbin.CasbinModel, error) {
 	role := ctx.Query("role")
 	source := ctx.Query("source")

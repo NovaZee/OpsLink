@@ -18,9 +18,7 @@ func Logger() gin.HandlerFunc {
 		nowTime := time.Now()
 		logger.Infow(" http request",
 			zap.Any(" request", c.Request.URL),
-			zap.Any("response", c.Writer.Status()),
 			zap.String("ip", c.ClientIP()),
-			zap.Int("status", c.Writer.Status()),
 			zap.Duration("latency", time.Since(nowTime)),
 		)
 		c.Next()
@@ -28,20 +26,25 @@ func Logger() gin.HandlerFunc {
 }
 
 // JWT token验证中间件
-func JWT(r *Router) gin.HandlerFunc {
+func JWT(cb *casbin.Casbin) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Debugw("jwt check ", "error", r, "http errorCode", c.Writer.Status())
+			}
+		}()
 		token := c.GetHeader("Authorization")
 		if token == "" {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error":  ErrorAuthCheckTokenFail,
-				"status": http.StatusBadRequest,
+				"status": http.StatusForbidden,
 			})
 		}
 		claims, err := util.ParseToken(token)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error":  ErrorAuthCheckTokenFail,
-				"status": http.StatusBadRequest,
+				"status": http.StatusForbidden,
 			})
 		} else if time.Now().Unix() > claims.ExpiresAt {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
@@ -49,11 +52,11 @@ func JWT(r *Router) gin.HandlerFunc {
 				"status": http.StatusBadRequest,
 			})
 		}
-		enforce := r.cb.Enforcer.Enforce(claims.UserName, casbin.HttpV1, casbin.Read)
+		enforce := cb.Enforcer.Enforce(claims.UserName, casbin.HttpV1, casbin.Read)
 		if !enforce {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error":  ErrorAuthCheckTokenFail,
-				"status": http.StatusBadRequest,
+				"status": http.StatusForbidden,
 			})
 		}
 		c.Next()

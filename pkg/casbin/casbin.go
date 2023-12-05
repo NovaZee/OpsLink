@@ -172,18 +172,6 @@ func (c *Casbin) Delete(a any) bool {
 	return false
 }
 
-//func ParamsMatch(fullNameKey1 string, key2 string) bool {
-//	key1 := strings.Split(fullNameKey1, "?")[0]
-//	return util.KeyMatch2(key1, key2)
-//}
-//
-//// 注册func到casbin
-//func ParamsMatchFunc(args ...interface{}) (interface{}, error) {
-//	name1 := args[0].(string)
-//	name2 := args[1].(string)
-//	return ParamsMatch(name1, name2), nil
-//}
-
 // EnforcerProvider 接口定义
 type EnforcerProvider interface {
 	GetEnforcer(modelConf string) (*casbin.Enforcer, error)

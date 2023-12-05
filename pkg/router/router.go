@@ -1,10 +1,8 @@
 package router
 
 import (
-	"context"
-	"github.com/denovo/permission/pkg/casbin"
+	"github.com/denovo/permission/pkg/router/kubehandler"
 	"github.com/denovo/permission/pkg/service"
-	store "github.com/denovo/permission/pkg/store"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 )
@@ -16,10 +14,9 @@ const (
 )
 
 type Router struct {
-	router *gin.Engine
-	cb     *casbin.Casbin
+	Router *gin.Engine
 
-	storeService store.StoreService
+	handler []Handler
 }
 
 func InitRouter(opslinkServer *service.OpsLinkServer) (*Router, error) {
@@ -29,63 +26,48 @@ func InitRouter(opslinkServer *service.OpsLinkServer) (*Router, error) {
 	engine.Use(Logger())
 	engine.GET("/validate")
 
-	router, err := NewRouter(engine, opslinkServer.Casbin, opslinkServer.StoreService)
+	router, err := NewRouter(engine)
 	if err != nil {
 		return nil, err
 	}
-
-	ctx := context.Background()
-	router.InitPolicyRouting()
-	router.InitUserRouting(ctx)
+	router.InitHandler(opslinkServer)
+	registerHandlers(router, router.handler...)
 	engine.Run(":" + opslinkServer.Config.Server.HttpPort).Error()
 	return router, nil
 }
 
-func NewRouter(g *gin.Engine, ca *casbin.Casbin, ss store.StoreService) (*Router, error) {
+func (r *Router) InitHandler(opslinkServer *service.OpsLinkServer) {
+	handlers := []Handler{
+		BuildPolicy(opslinkServer.Casbin, ManagerMiddleware()),
+		BuildRole(opslinkServer.Casbin, opslinkServer.StoreService, ManagerMiddleware()),
+		//todo:kube资源过多时，由于使用的路由中间件一致，可以继续抽离模块，尽量避免在路由模块操作
+		kubehandler.BuildDeployments(opslinkServer.K8sClient.DepHandler, JWT(opslinkServer.Casbin)),
+		kubehandler.BuildPod(opslinkServer.K8sClient.PodHandler, JWT(opslinkServer.Casbin)),
+	}
+	r.handler = handlers
+}
+
+// registerHandlers 将多个处理程序注册到 Gin 路由器上
+func registerHandlers(router *Router, handlers ...Handler) {
+	for _, h := range handlers {
+		h.Register(router.Router)
+	}
+}
+
+func NewRouter(g *gin.Engine) (*Router, error) {
 	return &Router{
-		router:       g,
-		cb:           ca,
-		storeService: ss,
+		Router: g,
 	}, nil
 }
 
-// InitPolicyRouting InitAdminRouting 管理员路由
-func (r *Router) InitPolicyRouting() {
-	admin := r.router.Group("/manager")
-	{
-		admin.POST("addPolicy", func(ctx *gin.Context) {
-			AddPolicy(ctx, r.cb)
-		})
-		admin.GET("deletePolicy", func(ctx *gin.Context) {
-			DeletePolicy(ctx, r.cb)
-		})
-		admin.POST("update", func(ctx *gin.Context) {
-		})
-	}
-	admin.Use(ManagerMiddleware())
-}
-
-// InitUserRouting 用户注册路由
-func (r *Router) InitUserRouting(ctxEtcd context.Context) {
-	admin := r.router.Group("/")
-	{
-		admin.POST("logIn", func(ctx *gin.Context) {
-			LogIn(ctx, r, ctxEtcd)
-		})
-		admin.POST("signIn", func(ctx *gin.Context) {
-			SignIn(ctx, r, ctxEtcd)
-		})
-	}
-}
-
-// InitAccessingRouting 用户访问路由
-func (r *Router) InitAccessingRouting() {
-	// 访问请求通过jwt校验->casbin校验
-	admin := r.router.Group("/v1")
-	{
-		admin.POST("index", func(ctx *gin.Context) {
-		})
-
-	}
-	admin.Use(JWT(r))
-}
+//// InitAccessingRouting 用户访问路由
+//func (r *Router) InitAccessingRouting() {
+//	// 访问请求通过jwt校验->casbin校验
+//	admin := r.Router.Group("/v1")
+//	{
+//		admin.POST("index", func(ctx *gin.Context) {
+//		})
+//
+//	}
+//	admin.Use(JWT(r.cb))
+//}

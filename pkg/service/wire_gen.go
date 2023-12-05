@@ -9,7 +9,7 @@ package service
 import (
 	"github.com/denovo/permission/config"
 	"github.com/denovo/permission/pkg/casbin"
-	"github.com/denovo/permission/pkg/kubeclient"
+	"github.com/denovo/permission/pkg/kubenates"
 	"github.com/denovo/permission/pkg/store"
 )
 
@@ -24,7 +24,7 @@ func InitializeServer(cfg *config.OpsLinkConfig) (*OpsLinkServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	kubernetesClient, err := initClientSet(cfg)
+	k8sClient, err := initOpsKube(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +32,7 @@ func InitializeServer(cfg *config.OpsLinkConfig) (*OpsLinkServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	opsLinkServer, err := NewOpsLinkServer(cfg, casbin, storeService, kubernetesClient, signalService)
+	opsLinkServer, err := NewOpsLinkServer(cfg, casbin, storeService, k8sClient, signalService)
 	if err != nil {
 		return nil, err
 	}
@@ -53,10 +53,6 @@ func initSignalService(conf *config.OpsLinkConfig) (*SignalService, error) {
 	return NewSignalService(), nil
 }
 
-func initClientSet(conf *config.OpsLinkConfig) (*kubeclient.KubernetesClient, error) {
-	clinetInterface, err := kubeclient.NewClientInterface(conf, kubeclient.K8sClientTypeKubernetes)
-	if err != nil {
-		return nil, err
-	}
-	return kubeclient.GetClientSet(clinetInterface), nil
+func initOpsKube(conf *config.OpsLinkConfig) (*kubenates.K8sClient, error) {
+	return kubenates.NewK8sConfig(conf)
 }
