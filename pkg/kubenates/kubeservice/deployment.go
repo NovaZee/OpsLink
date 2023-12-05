@@ -8,6 +8,8 @@ import (
 	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -16,17 +18,6 @@ type DeploymentService struct {
 	Client kubernetes.Interface
 
 	helper *helper
-}
-
-type StructMetadata struct {
-	Annotations       map[string]string `json:"annotations"`
-	CreationTimestamp string            `json:"creationTimestamp"`
-	Generation        int64             `json:"generation"`
-	Labels            map[string]string `json:"labels"`
-	Name              string            `json:"name"`
-	Namespace         string            `json:"namespace"`
-	ResourceVersion   string            `json:"resourceVersion"`
-	UID               string            `json:"uid"`
 }
 
 func NewDeploymentService(client kubernetes.Interface) *DeploymentService {
@@ -53,6 +44,23 @@ func (ds *DeploymentService) List(namespace string) (res []*kube.Deployment, err
 	return
 }
 
+func (ds *DeploymentService) Update(ctx context.Context, ns, name string, updateData *v1.Deployment) (res *v1.Deployment, err error) {
+	updatedDeployment, err := ds.Client.AppsV1().Deployments(ns).Update(ctx, updateData, metav1.UpdateOptions{})
+	if err != nil {
+		logger.Warnw("DeploymentController Update ", err, "Name", name, "Namespace", ns)
+	}
+	return updatedDeployment, err
+}
+
+func (ds *DeploymentService) Patch(ctx context.Context, ns, name string, patchData []byte) (res *v1.Deployment, err error) {
+	//四种patch，默认选择json_patch,后续增加其他
+	updatedDeployment, err := ds.Client.AppsV1().Deployments(ns).Patch(ctx, name, types.JSONPatchType, patchData, metav1.PatchOptions{})
+	if err != nil {
+		logger.Warnw("DeploymentController Patch ", err, "Name", name, "Namespace", ns)
+	}
+	return updatedDeployment, err
+}
+
 func (ds *DeploymentService) DownToYaml(ns, name string) ([]byte, error) {
 	deployments, err := ds.Di.ListALl(ns)
 	if err != nil {
@@ -60,33 +68,18 @@ func (ds *DeploymentService) DownToYaml(ns, name string) ([]byte, error) {
 	}
 	for _, deployment := range deployments {
 		if name == deployment.Name {
-
-			// Create a struct to hold partial deployment information including apiVersion, kind, metadata, spec, and status
-			metadate := &StructMetadata{
-				Annotations:       deployment.ObjectMeta.Annotations,
-				CreationTimestamp: deployment.CreationTimestamp.String(),
-				Generation:        deployment.Generation,
-				Labels:            deployment.Labels,
-				Name:              deployment.Name,
-				Namespace:         deployment.Namespace,
-				ResourceVersion:   deployment.ResourceVersion,
-				UID:               string(deployment.UID),
+			//将 Deployment 对象转换为 Unstructured 对象
+			deploymentData, err := runtime.DefaultUnstructuredConverter.ToUnstructured(deployment)
+			if err != nil {
+				return nil, err
 			}
-			partialDeployment := struct {
-				APIVersion string              `json:"apiVersion"`
-				Kind       string              `json:"kind"`
-				Metadata   *StructMetadata     `json:"metadata"`
-				Spec       v1.DeploymentSpec   `json:"spec,omitempty"`
-				Status     v1.DeploymentStatus `json:"status,omitempty"`
-			}{
-				APIVersion: "apps/v1",
-				Kind:       "Deployment",
-				Metadata:   metadate,
-				Spec:       deployment.Spec,
-				Status:     deployment.Status,
+			err = runtime.DefaultUnstructuredConverter.FromUnstructured(deploymentData, &v1.Deployment{})
+			if err != nil {
+				return nil, err
 			}
-
-			deploymentByte, err := yaml.Marshal(partialDeployment)
+			deploymentData["apiVersion"] = "apps/v1"
+			deploymentData["kind"] = "Deployment"
+			deploymentByte, err := yaml.Marshal(deploymentData)
 			if err != nil {
 				return nil, err
 			}
