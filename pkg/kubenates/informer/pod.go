@@ -16,7 +16,7 @@ func (d *PodInformer) OnAdd(obj interface{}, isInInitialList bool) {
 	if dep, ok := obj.(*corev1.Pod); ok {
 		d.Add(dep)
 	}
-	logger.Infow("deployment informer webhook", "action", "OnDelete", "Name", obj.(*corev1.Pod).Name)
+	logger.Infow("pod informer webhook", "action", "OnDelete", "Name", obj.(*corev1.Pod).Name)
 }
 
 // OnUpdate update event informer 当对象被修改时，将会调用这个函数。
