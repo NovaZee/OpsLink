@@ -16,7 +16,7 @@ func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 执行时间
 		nowTime := time.Now()
-		logger.Infow(" http request",
+		logger.Debugw(" http request",
 			zap.Any(" request", c.Request.URL),
 			zap.String("ip", c.ClientIP()),
 			zap.Duration("latency", time.Since(nowTime)),

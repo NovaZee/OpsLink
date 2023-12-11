@@ -17,11 +17,25 @@ type DeploymentService struct {
 	Di     *informer.DeploymentInformer
 	Client kubernetes.Interface
 
-	helper *helper
+	EventHandler *EventService
+	helper       *helper
 }
 
-func NewDeploymentService(client kubernetes.Interface) *DeploymentService {
-	return &DeploymentService{Di: &informer.DeploymentInformer{}, Client: client, helper: &helper{}}
+func NewDeploymentService(client kubernetes.Interface, eh *EventService) *DeploymentService {
+	return &DeploymentService{Di: &informer.DeploymentInformer{}, Client: client, helper: &helper{}, EventHandler: eh}
+}
+
+func (ds *DeploymentService) GetDeployment(ns, name string) (*v1.Deployment, error) {
+	deployments, err := ds.Di.ListALl(ns)
+	if err != nil {
+		return nil, err
+	}
+	for _, deployment := range deployments {
+		if name == deployment.Name {
+			return deployment, nil
+		}
+	}
+	return nil, nil
 }
 
 func (ds *DeploymentService) List(namespace string) (res []*kube.Deployment, err error) {
@@ -32,13 +46,14 @@ func (ds *DeploymentService) List(namespace string) (res []*kube.Deployment, err
 
 	for _, deployment := range deployments {
 		res = append(res, &kube.Deployment{
-			Name:       deployment.Name,
-			Namespace:  deployment.Namespace,
-			Replicas:   []int32{deployment.Status.Replicas, deployment.Status.AvailableReplicas, deployment.Status.UnavailableReplicas},
-			Images:     ds.helper.GetImages(*deployment),
-			IsComplete: ds.getDeploymentIsComplete(deployment),
-			Message:    ds.getDeploymentCondition(deployment),
-			CreateTime: deployment.CreationTimestamp.Format("2006-01-02 15:04:05"),
+			Name:         deployment.Name,
+			Namespace:    deployment.Namespace,
+			Replicas:     []int32{deployment.Status.Replicas, deployment.Status.AvailableReplicas, deployment.Status.UnavailableReplicas},
+			Images:       ds.helper.GetImages(*deployment),
+			IsComplete:   ds.getDeploymentIsComplete(deployment),
+			Message:      ds.getDeploymentCondition(deployment),
+			EventMessage: ds.EventHandler.GetEvent(namespace, "Deployment", deployment.Name),
+			CreateTime:   deployment.CreationTimestamp.Format("2006-01-02 15:04:05"),
 		})
 	}
 	return

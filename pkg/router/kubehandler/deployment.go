@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/apimachinery/pkg/util/json"
 	"net/http"
+	"strconv"
 )
 
 type DeploymentController struct {
@@ -92,6 +93,37 @@ func (dc *DeploymentController) patch(ctx *gin.Context) {
 		KubeErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
+	return
+}
+
+func (dc *DeploymentController) scale(ctx *gin.Context) {
+	ns := ctx.Param("ns")
+	name := ctx.Param("name")
+	scale := ctx.Query("scale")
+	deployment, err := dc.DeploymentService.GetDeployment(ns, name)
+	if err != nil {
+		KubeErrorResponse(ctx, http.StatusBadRequest, err)
+		return
+	}
+	atoi, err := strconv.ParseInt(scale, 10, 32)
+	if err != nil {
+		KubeErrorResponse(ctx, http.StatusBadRequest, err)
+		return
+	}
+	valInt32 := int32(atoi)
+	replicas := *deployment.Spec.Replicas
+	if valInt32 == replicas {
+		KubeSuccessResponse(ctx, http.StatusOK, true)
+		return
+	}
+	deployment.Spec.Replicas = &valInt32
+
+	_, err = dc.DeploymentService.Update(ctx, ns, name, deployment)
+	if err != nil {
+		KubeErrorResponse(ctx, http.StatusBadRequest, err)
+		return
+	}
+	KubeSuccessResponse(ctx, http.StatusOK, true)
 	return
 }
 
@@ -182,12 +214,14 @@ func (dc *DeploymentController) Register(g *gin.Engine) {
 
 	deployments := g.Group("v1/deployments").Use(dc.middlewares...)
 	{
-		deployments.GET("list", func(ctx *gin.Context) { dc.list(ctx) }) ///deployments?namespace=
+		deployments.GET("list", func(ctx *gin.Context) { dc.list(ctx) })
 		deployments.POST("delete/:ns/:name", func(ctx *gin.Context) { dc.delete(ctx) })
 		deployments.GET("download/:ns/:name", func(ctx *gin.Context) { dc.downYaml(ctx) })
 		deployments.POST("apply/:ns", func(ctx *gin.Context) { dc.applyByYaml(ctx) })
 		deployments.PUT("patch/:ns/:name", func(ctx *gin.Context) { dc.patch(ctx) })
 		deployments.POST("update/:ns/:name", func(ctx *gin.Context) { dc.update(ctx) })
 		deployments.GET("checkout/:ns/:name", func(ctx *gin.Context) { dc.checkout(ctx) })
+
+		deployments.PUT("scale/:ns/:name", func(ctx *gin.Context) { dc.scale(ctx) })
 	}
 }

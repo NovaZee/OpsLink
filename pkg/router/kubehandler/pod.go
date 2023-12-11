@@ -23,7 +23,7 @@ func BuildPod(ps *kubeservice.PodService, middleware ...gin.HandlerFunc) *PodCon
 func (dc *PodController) GetFromApiServer(ctx *gin.Context) {
 	ns := ctx.Param("ns")
 	name := ctx.Param("name")
-	get, err := dc.PodService.Get(ctx, ns, name)
+	get, err := dc.PodService.GetDetail(ctx, ns, name)
 	if err != nil {
 		KubeErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
@@ -47,6 +47,19 @@ func (dc *PodController) GetFromApiServer(ctx *gin.Context) {
 
 }
 
+// kubectl get pods -l app=nginx -n default
+func (dc *PodController) getPodsByLabel(ctx *gin.Context) {
+	ns := ctx.DefaultQuery("namespace", "default")
+	label := ctx.DefaultQuery("label", "nginx")
+	res, err := dc.PodService.GetByLabelInCache(ns, label)
+	if err != nil {
+		KubeErrorResponse(ctx, http.StatusInternalServerError, err)
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"data": res, "status": http.StatusOK})
+	return
+}
+
 func (dc *PodController) GetFromCache(ctx *gin.Context) {
 	_ = ctx.DefaultQuery("namespace", "default")
 }
@@ -61,9 +74,8 @@ func (dc *PodController) Delete(ctx *gin.Context) {
 func (dc *PodController) Register(g *gin.Engine) {
 	pods := g.Group("v1/pods").Use(dc.middlewares...)
 	{
-		pods.GET("list", func(ctx *gin.Context) { dc.List(ctx) })                      ///deployments?namespace=
-		pods.GET("get/:ns/:name", func(ctx *gin.Context) { dc.GetFromApiServer(ctx) }) ///deployments?namespace=
-		pods.GET("get/:ns/:name", func(ctx *gin.Context) { dc.GetFromApiServer(ctx) }) ///deployments?namespace=
-
+		pods.GET("list", func(ctx *gin.Context) { dc.List(ctx) })
+		pods.GET("getDetail/:ns/:name", func(ctx *gin.Context) { dc.GetFromApiServer(ctx) })
+		pods.GET("getPods", func(ctx *gin.Context) { dc.getPodsByLabel(ctx) })
 	}
 }

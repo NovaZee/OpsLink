@@ -16,8 +16,9 @@ type K8sClient struct {
 	MetricsClientSet *kubernetes.Clientset
 	RestConfig       *rest.Config
 
-	DepHandler *kubeservice.DeploymentService
-	PodHandler *kubeservice.PodService
+	DepHandler   *kubeservice.DeploymentService
+	PodHandler   *kubeservice.PodService
+	EventHandler *kubeservice.EventService
 }
 
 func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
@@ -64,8 +65,11 @@ func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
 
 // initHandlers 用于初始化 DepHandler 和 PodHandler
 func (k *K8sClient) initHandlers() {
-	k.DepHandler = kubeservice.NewDeploymentService(k.Clientset)
-	k.PodHandler = kubeservice.NewPodService(k.Clientset)
+	k.EventHandler = kubeservice.NewEventService(k.Clientset)
+
+	k.DepHandler = kubeservice.NewDeploymentService(k.Clientset, k.EventHandler)
+	k.PodHandler = kubeservice.NewPodService(k.Clientset, k.EventHandler)
+
 }
 
 // NewClientSet Kubernetes客户端的接口实例D
@@ -97,6 +101,9 @@ func (k *K8sClient) InitInformer() informers.SharedInformerFactory {
 
 	pods := sif.Core().V1().Pods()
 	pods.Informer().AddEventHandler(k.PodHandler.Pi)
+
+	event := sif.Core().V1().Events()
+	event.Informer().AddEventHandler(k.EventHandler.Ei)
 
 	sif.Start(wait.NeverStop)
 
