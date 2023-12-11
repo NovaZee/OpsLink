@@ -84,9 +84,9 @@ func (ds *DeploymentService) DownToYaml(ns, name string) ([]byte, error) {
 	for _, deployment := range deployments {
 		if name == deployment.Name {
 			//将 Deployment 对象转换为 Unstructured 对象
-			deploymentData, err := runtime.DefaultUnstructuredConverter.ToUnstructured(deployment)
-			if err != nil {
-				return nil, err
+			deploymentData, converterErr := runtime.DefaultUnstructuredConverter.ToUnstructured(deployment)
+			if converterErr != nil {
+				return nil, converterErr
 			}
 			err = runtime.DefaultUnstructuredConverter.FromUnstructured(deploymentData, &v1.Deployment{})
 			if err != nil {

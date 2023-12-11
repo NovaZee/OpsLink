@@ -4,6 +4,7 @@ import (
 	config "github.com/denovo/permission/config"
 	"github.com/denovo/permission/pkg/casbin"
 	opskube "github.com/denovo/permission/pkg/kubenates"
+	"github.com/denovo/permission/pkg/signal"
 	opsstore "github.com/denovo/permission/pkg/store"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -13,7 +14,7 @@ type OpsLinkServer struct {
 	Config        *config.OpsLinkConfig
 	Casbin        *casbin.Casbin
 	StoreService  opsstore.StoreService
-	SignalService *SignalService
+	SignalService *signal.SignalService
 
 	K8sClient *opskube.K8sClient
 
@@ -25,22 +26,22 @@ func NewOpsLinkServer(config *config.OpsLinkConfig,
 	casbin *casbin.Casbin,
 	store opsstore.StoreService,
 	kcs *opskube.K8sClient,
-	signal *SignalService,
+	ws *signal.SignalService,
 ) (os *OpsLinkServer, err error) {
 	os = &OpsLinkServer{
 		Config:        config,
 		Casbin:        casbin,
 		StoreService:  store,
 		K8sClient:     kcs,
-		SignalService: signal,
+		SignalService: ws,
 		closedChan:    make(chan struct{}),
 	}
 
 	r := mux.NewRouter()
-	auth := &AuthMiddleware{}
-	m := &MuxHandler{
-		handler: auth,
-		next:    signal.ServeHTTP,
+	auth := &signal.AuthMiddleware{}
+	m := &signal.MuxHandler{
+		Handler: auth,
+		Next:    ws.ServeHTTP,
 	}
 	r.HandleFunc("/signal/validate", m.ServeHTTP)
 	http.Handle("/", r)

@@ -7,6 +7,7 @@ import (
 	config "github.com/denovo/permission/config"
 	"github.com/denovo/permission/pkg/casbin"
 	"github.com/denovo/permission/pkg/kubenates"
+	"github.com/denovo/permission/pkg/signal"
 	"github.com/denovo/permission/pkg/store"
 	"github.com/google/wire"
 )
@@ -30,8 +31,8 @@ func initStore(conf *config.OpsLinkConfig) (store.StoreService, error) {
 	return store.NewStoreService(conf)
 }
 
-func initSignalService(conf *config.OpsLinkConfig) (*SignalService, error) {
-	return NewSignalService(), nil
+func initSignalService(conf *config.OpsLinkConfig) (*signal.SignalService, error) {
+	return signal.NewSignalService(), nil
 }
 func initOpsKube(conf *config.OpsLinkConfig) (*kubenates.K8sClient, error) {
 	return kubenates.NewK8sConfig(conf)
