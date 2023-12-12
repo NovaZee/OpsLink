@@ -16,9 +16,10 @@ type K8sClient struct {
 	MetricsClientSet *kubernetes.Clientset
 	RestConfig       *rest.Config
 
-	DepHandler   *kubeservice.DeploymentService
-	PodHandler   *kubeservice.PodService
-	EventHandler *kubeservice.EventService
+	DepHandler       *kubeservice.DeploymentService
+	PodHandler       *kubeservice.PodService
+	NamespaceHandler *kubeservice.NamespaceService
+	EventHandler     *kubeservice.EventService
 }
 
 func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
@@ -69,6 +70,7 @@ func (k *K8sClient) initHandlers() {
 
 	k.DepHandler = kubeservice.NewDeploymentService(k.Clientset, k.EventHandler)
 	k.PodHandler = kubeservice.NewPodService(k.Clientset, k.EventHandler)
+	k.NamespaceHandler = kubeservice.NewNamespaceService(k.Clientset)
 
 }
 
@@ -104,6 +106,9 @@ func (k *K8sClient) InitInformer() informers.SharedInformerFactory {
 
 	event := sif.Core().V1().Events()
 	event.Informer().AddEventHandler(k.EventHandler.Ei)
+
+	ns := sif.Core().V1().Namespaces()
+	ns.Informer().AddEventHandler(k.NamespaceHandler.Nsi)
 
 	sif.Start(wait.NeverStop)
 

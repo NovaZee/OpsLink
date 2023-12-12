@@ -13,6 +13,7 @@ func (a *AuthMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request, next 
 	if r.URL != nil && r.URL.Path == "/signal/validate" {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 	}
+
 	//1:log 推送日志
 	//2:exec  进入容器内命令行操作
 	//3:signal  根据用户订阅资源 进行相应资源变动的推送

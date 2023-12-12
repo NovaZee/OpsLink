@@ -43,6 +43,7 @@ func (r *Router) InitHandler(opslinkServer *service.OpsLinkServer) {
 		//todo:kube资源过多时，由于使用的路由中间件一致，可以继续抽离模块，尽量避免在路由模块操作
 		kubehandler.BuildDeployments(opslinkServer.K8sClient.DepHandler, JWT(opslinkServer.Casbin)),
 		kubehandler.BuildPod(opslinkServer.K8sClient.PodHandler, JWT(opslinkServer.Casbin)),
+		kubehandler.BuildNamespace(opslinkServer.K8sClient.NamespaceHandler, JWT(opslinkServer.Casbin)),
 	}
 	r.handler = handlers
 }

@@ -127,7 +127,7 @@ func (dc *DeploymentController) scale(ctx *gin.Context) {
 	return
 }
 
-func (dc *DeploymentController) update(ctx *gin.Context) {
+func (dc *DeploymentController) upgrade(ctx *gin.Context) {
 	ns := ctx.Param("ns")
 	name := ctx.Param("name")
 	all, err := io.ReadAll(ctx.Request.Body)
@@ -141,11 +141,12 @@ func (dc *DeploymentController) update(ctx *gin.Context) {
 		KubeErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
-	_, err = dc.DeploymentService.Update(ctx, ns, name, deployment)
+	last, err := dc.DeploymentService.Update(ctx, ns, name, deployment)
 	if err != nil {
 		KubeErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
+	ctx.Data(http.StatusOK, "application/x-yaml", last)
 	return
 }
 
@@ -219,7 +220,8 @@ func (dc *DeploymentController) Register(g *gin.Engine) {
 		deployments.GET("download/:ns/:name", func(ctx *gin.Context) { dc.downYaml(ctx) })
 		deployments.POST("apply/:ns", func(ctx *gin.Context) { dc.applyByYaml(ctx) })
 		deployments.PUT("patch/:ns/:name", func(ctx *gin.Context) { dc.patch(ctx) })
-		deployments.POST("update/:ns/:name", func(ctx *gin.Context) { dc.update(ctx) })
+		// deployment的所有更新操作
+		deployments.POST("upgrade/:ns/:name", func(ctx *gin.Context) { dc.upgrade(ctx) })
 		deployments.GET("checkout/:ns/:name", func(ctx *gin.Context) { dc.checkout(ctx) })
 
 		deployments.PUT("scale/:ns/:name", func(ctx *gin.Context) { dc.scale(ctx) })

@@ -16,7 +16,7 @@ func (d *DeploymentInformer) OnAdd(obj interface{}, isInInitialList bool) {
 	if dep, ok := obj.(*v1.Deployment); ok {
 		d.Add(dep)
 	}
-	logger.Infow("deployment informer webhook", "action", "OnAdd", "Name", obj.(*v1.Deployment).Name)
+	logger.Infow("deployment informer webhook", "action", "OnAdd", "Name", obj.(*v1.Deployment).Name, "namespace", obj.(*v1.Deployment).Namespace)
 	//ws推送
 }
 
@@ -28,7 +28,7 @@ func (d *DeploymentInformer) OnUpdate(oldObj, newObj interface{}) {
 	if err != nil {
 		logger.Warnw("deployment informer webhook", err, "action", "OnUpdate")
 	}
-	logger.Infow("deployment informer webhook", "action", "OnUpdate", "Name", newObj.(*v1.Deployment).Name)
+	logger.Infow("deployment informer webhook", "action", "OnUpdate", "Name", newObj.(*v1.Deployment).Name, "namespace", newObj.(*v1.Deployment).Namespace)
 }
 
 // OnDelete delete event informer 当对象被删除时，将会调用这个函数。
@@ -36,7 +36,7 @@ func (d *DeploymentInformer) OnDelete(obj interface{}) {
 	if dep, ok := obj.(*v1.Deployment); ok {
 		d.Delete(dep)
 	}
-	logger.Infow("deployment informer webhook", "action", "OnDelete", "Name", obj.(*v1.Deployment).Name)
+	logger.Infow("deployment informer webhook", "action", "OnDelete", "Name", obj.(*v1.Deployment).Name, "namespace", obj.(*v1.Deployment).Namespace)
 }
 
 // Delete informer to local cache

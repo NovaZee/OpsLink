@@ -59,12 +59,28 @@ func (ds *DeploymentService) List(namespace string) (res []*kube.Deployment, err
 	return
 }
 
-func (ds *DeploymentService) Update(ctx context.Context, ns, name string, updateData *v1.Deployment) (res *v1.Deployment, err error) {
+func (ds *DeploymentService) Update(ctx context.Context, ns, name string, updateData *v1.Deployment) ([]byte, error) {
 	updatedDeployment, err := ds.Client.AppsV1().Deployments(ns).Update(ctx, updateData, metav1.UpdateOptions{})
 	if err != nil {
 		logger.Warnw("DeploymentController Update ", err, "Name", name, "Namespace", ns)
+		return nil, err
 	}
-	return updatedDeployment, err
+
+	deploymentData, converterErr := runtime.DefaultUnstructuredConverter.ToUnstructured(updatedDeployment)
+	if converterErr != nil {
+		return nil, converterErr
+	}
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(deploymentData, &v1.Deployment{})
+	if err != nil {
+		return nil, err
+	}
+	deploymentData["apiVersion"] = "apps/v1"
+	deploymentData["kind"] = "Deployment"
+	deploymentByte, err := yaml.Marshal(deploymentData)
+	if err != nil {
+		return nil, err
+	}
+	return deploymentByte, nil
 }
 
 func (ds *DeploymentService) Patch(ctx context.Context, ns, name string, patchData []byte) (res *v1.Deployment, err error) {

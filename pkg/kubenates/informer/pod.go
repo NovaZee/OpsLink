@@ -16,7 +16,7 @@ func (d *PodInformer) OnAdd(obj interface{}, isInInitialList bool) {
 	if dep, ok := obj.(*corev1.Pod); ok {
 		d.Add(dep)
 	}
-	logger.Infow("pod informer webhook", "action", "OnDelete", "Name", obj.(*corev1.Pod).Name)
+	logger.Infow("pod informer webhook", "action", "OnDelete", "Name", obj.(*corev1.Pod).Name, "namespace", obj.(*corev1.Pod).Namespace)
 }
 
 // OnUpdate update event informer 当对象被修改时，将会调用这个函数。
@@ -27,7 +27,7 @@ func (d *PodInformer) OnUpdate(oldObj, newObj interface{}) {
 	if err != nil {
 		logger.Warnw("pod informer webhook", err, "action", "OnUpdate")
 	}
-	logger.Infow("pod informer webhook", "action", "OnUpdate", "Name", newObj.(*corev1.Pod).Name)
+	logger.Infow("pod informer webhook", "action", "OnUpdate", "Name", newObj.(*corev1.Pod).Name, "namespace", newObj.(*corev1.Pod).Namespace)
 }
 
 // OnDelete delete event informer 当对象被删除时，将会调用这个函数。
@@ -35,6 +35,7 @@ func (d *PodInformer) OnDelete(obj interface{}) {
 	if dep, ok := obj.(*corev1.Pod); ok {
 		d.Delete(dep)
 	}
+	logger.Infow("pod informer webhook", "action", "OnDelete", "Name", obj.(*corev1.Pod).Name, "namespace", obj.(*corev1.Pod).Namespace)
 }
 
 // Add informer to local cache
