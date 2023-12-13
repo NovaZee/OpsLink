@@ -9,13 +9,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
 type K8sClient struct {
 	Clientset        kubernetes.Interface
-	MetricsClientSet *kubernetes.Clientset
+	MetricsClientSet *versioned.Clientset
 	RestConfig       *rest.Config
 
+	NodeHandler      *kubeservice.NodeService
 	DepHandler       *kubeservice.DeploymentService
 	PodHandler       *kubeservice.PodService
 	NamespaceHandler *kubeservice.NamespaceService
@@ -25,17 +27,23 @@ type K8sClient struct {
 func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
 	var err error
 	var clientSet kubernetes.Interface
+	var metricClient *versioned.Clientset
 	k8sClient := &K8sClient{}
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		logger.Infow("Program running from outside of the cluster")
-		set, err2 := NewClientSet(conf)
+		set, kubecfg, err2 := NewClientSet(conf)
 		if err2 != nil {
 			return nil, err2
 		}
-		err = nil
 		clientSet = set
+
+		mc, err3 := versioned.NewForConfig(kubecfg)
+		if err3 != nil {
+			return nil, err3
+		}
+		metricClient = mc
 	} else {
 		kubeConfig :=
 			clientcmd.NewDefaultClientConfigLoadingRules().GetDefaultFilename()
@@ -45,6 +53,12 @@ func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
 			return nil, err2
 		}
 		clientSet = set
+
+		mc, err3 := versioned.NewForConfig(config)
+		if err3 != nil {
+			return nil, err3
+		}
+		metricClient = mc
 	}
 	if err != nil {
 		logger.Infow("Program running from outside of the cluster")
@@ -54,6 +68,7 @@ func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
 	}
 
 	k8sClient.Clientset = clientSet
+	k8sClient.MetricsClientSet = metricClient
 	k8sClient.RestConfig = config
 
 	//init resource
@@ -66,6 +81,8 @@ func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
 
 // initHandlers 用于初始化 DepHandler 和 PodHandler
 func (k *K8sClient) initHandlers() {
+
+	k.NodeHandler = kubeservice.NewNodeService(k.MetricsClientSet)
 	k.EventHandler = kubeservice.NewEventService(k.Clientset)
 
 	k.DepHandler = kubeservice.NewDeploymentService(k.Clientset, k.EventHandler)
@@ -75,7 +92,7 @@ func (k *K8sClient) initHandlers() {
 }
 
 // NewClientSet Kubernetes客户端的接口实例D
-func NewClientSet(conf *config.OpsLinkConfig) (kubernetes.Interface, error) {
+func NewClientSet(conf *config.OpsLinkConfig) (kubernetes.Interface, *rest.Config, error) {
 	var err error
 	kubeconfig := conf.Kubernetes.Kubeconfig
 	configOverrides := &clientcmd.ConfigOverrides{}
@@ -85,13 +102,13 @@ func NewClientSet(conf *config.OpsLinkConfig) (kubernetes.Interface, error) {
 		&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfig},
 		configOverrides).ClientConfig()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	k8sClient, err := kubernetes.NewForConfig(kubecfg)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return k8sClient, nil
+	return k8sClient, kubecfg, nil
 }
 
 // InitInformer informer初始化
