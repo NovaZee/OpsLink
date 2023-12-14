@@ -56,7 +56,7 @@ func (pc *PodController) getPodsByLabel(ctx *gin.Context) {
 		KubeErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"data": res, "status": http.StatusOK})
+	KubeSuccessMsgResponse(ctx, http.StatusOK, res)
 	return
 }
 
@@ -74,7 +74,7 @@ func (pc *PodController) downYaml(ctx *gin.Context) {
 	ctx.Header("Content-Type", "application/x-yaml")
 
 	// Send the Deployment YAML as a response
-	ctx.Data(http.StatusOK, "application/x-yaml", yaml)
+	KubeSuccessYamlResponse(ctx, http.StatusOK, yaml)
 	return
 }
 

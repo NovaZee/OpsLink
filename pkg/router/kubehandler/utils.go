@@ -9,8 +9,17 @@ func KubeErrorResponse(ctx *gin.Context, statusCode int, err error) {
 	return
 }
 
-func KubeSuccessResponse(ctx *gin.Context, statusCode int, data interface{}) {
+func KubeSuccessMsgResponse(ctx *gin.Context, statusCode int, data interface{}) {
 	ctx.JSON(statusCode, gin.H{"data": data, "status": statusCode})
+	return
+}
+func KubeSuccessResponse(ctx *gin.Context, statusCode int) {
+	ctx.JSON(statusCode, gin.H{"data": "success", "status": statusCode})
+	return
+}
+
+func KubeNotFoundResponse(ctx *gin.Context, statusCode int) {
+	ctx.JSON(statusCode, gin.H{"data": "not exist！", "status": statusCode})
 	return
 }
 

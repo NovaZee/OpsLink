@@ -83,7 +83,7 @@ func (k *K8sClient) initHandlers() {
 	k.PodHandler = kubeservice.NewPodService(k.Clientset, k.EventHandler)
 	k.NamespaceHandler = kubeservice.NewNamespaceService(k.Clientset)
 
-	k.NodeHandler = kubeservice.NewNodeService(k.MetricsClientSet, k.PodHandler.Pi)
+	k.NodeHandler = kubeservice.NewNodeService(k.Clientset, k.MetricsClientSet, k.PodHandler.Pi)
 
 }
 

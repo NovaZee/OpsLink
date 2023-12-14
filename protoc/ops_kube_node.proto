@@ -8,8 +8,6 @@ message node {
   string name = 1;
   string ip = 2;
   string host_name = 3;
-  repeated KeyValue origin_labels = 4;
-  repeated Taint origin_taints = 5;
   repeated string labels = 6;
   repeated string taints = 7;
   NodeCapacity capacity = 8;
@@ -35,7 +33,13 @@ message Taint {
    string effect = 3;
 }
 
-message KeyValue {
+message Map {
   string key = 1;
   string value = 2;
+}
+
+message FrontNode {
+  string name = 1;
+  repeated Map labels = 2;
+  repeated Taint taints = 3;
 }

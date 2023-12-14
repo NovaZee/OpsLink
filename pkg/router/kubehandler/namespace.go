@@ -19,7 +19,7 @@ func BuildNamespace(nss *kubeservice.NamespaceService, middleware ...gin.Handler
 }
 
 func (nss *NamespaceController) List(ctx *gin.Context) {
-	KubeSuccessResponse(ctx, http.StatusOK, nss.NamespaceService.List())
+	KubeSuccessMsgResponse(ctx, http.StatusOK, nss.NamespaceService.List())
 	return
 }
 
@@ -30,7 +30,7 @@ func (nss *NamespaceController) Add(ctx *gin.Context) {
 		KubeErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}
-	KubeSuccessResponse(ctx, http.StatusOK, create)
+	KubeSuccessMsgResponse(ctx, http.StatusOK, create)
 	return
 }
 
@@ -41,7 +41,7 @@ func (nss *NamespaceController) Remove(ctx *gin.Context) {
 		KubeErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}
-	KubeSuccessResponse(ctx, http.StatusOK, name)
+	KubeSuccessMsgResponse(ctx, http.StatusOK, name)
 	return
 }
 

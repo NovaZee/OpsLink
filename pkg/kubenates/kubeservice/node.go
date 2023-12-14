@@ -4,8 +4,10 @@ import (
 	"context"
 	"github.com/denovo/permission/pkg/kubenates/informer"
 	"github.com/denovo/permission/protoc/kube"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
@@ -13,11 +15,23 @@ type NodeService struct {
 	Ni     *informer.NodeInformer
 	Pi     *informer.PodInformer
 	Metric *versioned.Clientset
+	Client kubernetes.Interface
 	helper *helper
 }
 
-func NewNodeService(client *versioned.Clientset, pi *informer.PodInformer) *NodeService {
-	return &NodeService{Ni: &informer.NodeInformer{}, Pi: pi, Metric: client, helper: &helper{}}
+func NewNodeService(client kubernetes.Interface, mc *versioned.Clientset, pi *informer.PodInformer) *NodeService {
+	return &NodeService{Ni: &informer.NodeInformer{}, Pi: pi, Client: client, Metric: mc, helper: &helper{}}
+}
+func (ns *NodeService) Get(nodeName string) *corev1.Node {
+	return ns.Ni.Get(nodeName)
+}
+
+func (ns *NodeService) Update(ctx context.Context, node *corev1.Node) (*corev1.Node, error) {
+	node, err := ns.Client.CoreV1().Nodes().Update(ctx, node, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
 }
 
 func (ns *NodeService) List(ctx context.Context) (res []*kube.Node) {

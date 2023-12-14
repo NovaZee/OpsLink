@@ -113,7 +113,7 @@ func (dc *DeploymentController) scale(ctx *gin.Context) {
 	valInt32 := int32(atoi)
 	replicas := *deployment.Spec.Replicas
 	if valInt32 == replicas {
-		KubeSuccessResponse(ctx, http.StatusOK, true)
+		KubeSuccessResponse(ctx, http.StatusOK)
 		return
 	}
 	deployment.Spec.Replicas = &valInt32
@@ -123,7 +123,7 @@ func (dc *DeploymentController) scale(ctx *gin.Context) {
 		KubeErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
-	KubeSuccessResponse(ctx, http.StatusOK, true)
+	KubeSuccessResponse(ctx, http.StatusOK)
 	return
 }
 

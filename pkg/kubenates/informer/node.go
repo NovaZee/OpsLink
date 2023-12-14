@@ -60,3 +60,9 @@ func (n *NodeInformer) ListAll() []*corev1.Node {
 	})
 	return nodes
 }
+func (n *NodeInformer) Get(nodeName string) *corev1.Node {
+	if node, ok := n.localCache.Load(nodeName); ok {
+		return node.(*corev1.Node)
+	}
+	return nil
+}
