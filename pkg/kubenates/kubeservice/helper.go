@@ -8,6 +8,8 @@ import (
 
 type helper struct{}
 
+const pattern = "[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\\.?"
+
 func (h *helper) GetImages(deployment v1.Deployment) string {
 	return h.GetImagesByPod(deployment.Spec.Template.Spec.Containers)
 }
@@ -37,4 +39,18 @@ func (h *helper) PodIsReady(pod *corev1.Pod) bool {
 		}
 	}
 	return true
+}
+
+func (h *helper) LabelsFilter(labels map[string]string) (ls []string) {
+	for k, v := range labels {
+		ls = append(ls, fmt.Sprintf("%s=%s", k, v))
+	}
+	return
+}
+
+func (h *helper) TaintsFilter(taints []corev1.Taint) (ret []string) {
+	for _, taint := range taints {
+		ret = append(ret, fmt.Sprintf("%s=%s:%s", taint.Key, taint.Value, taint.Effect))
+	}
+	return
 }

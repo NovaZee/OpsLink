@@ -162,6 +162,18 @@ func (dc *DeploymentController) delete(ctx *gin.Context) {
 	return
 }
 
+func (dc *DeploymentController) Rollout(ctx *gin.Context) {
+	ns := ctx.Param("ns")
+	name := ctx.Param("name")
+	err := dc.DeploymentService.Rollout(ctx, ns, name)
+	if err != nil {
+		KubeErrorResponse(ctx, http.StatusInternalServerError, err)
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"data": "success", "status": http.StatusOK})
+	return
+}
+
 func (dc *DeploymentController) downYaml(ctx *gin.Context) {
 	ns := ctx.Param("ns")
 	name := ctx.Param("name")
@@ -182,17 +194,17 @@ func (dc *DeploymentController) downYaml(ctx *gin.Context) {
 
 func (dc *DeploymentController) applyByYaml(ctx *gin.Context) {
 	ns := ctx.Param("ns")
-	// 从请求中获取上传的文件
+	// upload file
 	file, _, err := ctx.Request.FormFile("file")
 	if err != nil {
 		KubeErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}
 	defer file.Close()
-	// 读取上传的文件内容为二进制字节流
+	// read to binary
 	data, err := io.ReadAll(file)
 
-	// 创建一个 Unstructured 对象来装载 YAML 内容
+	// create unstructured object
 	decode := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 	deployment := &v1.Deployment{}
 	_, _, err = decode.Decode(data, nil, deployment)
@@ -201,7 +213,7 @@ func (dc *DeploymentController) applyByYaml(ctx *gin.Context) {
 		return
 	}
 
-	err = dc.DeploymentService.Apply(ns, deployment)
+	err = dc.DeploymentService.Apply(ctx, ns, deployment)
 	if err != nil {
 		KubeErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
@@ -223,6 +235,7 @@ func (dc *DeploymentController) Register(g *gin.Engine) {
 		// deployment的所有更新操作
 		deployments.POST("upgrade/:ns/:name", func(ctx *gin.Context) { dc.upgrade(ctx) })
 		deployments.GET("checkout/:ns/:name", func(ctx *gin.Context) { dc.checkout(ctx) })
+		deployments.GET("rollout/:ns/:name", func(ctx *gin.Context) { dc.Rollout(ctx) })
 
 		deployments.PUT("scale/:ns/:name", func(ctx *gin.Context) { dc.scale(ctx) })
 	}

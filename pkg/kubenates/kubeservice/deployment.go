@@ -54,6 +54,7 @@ func (ds *DeploymentService) List(namespace string) (res []*kube.Deployment, err
 			Message:      ds.getDeploymentCondition(deployment),
 			EventMessage: ds.EventHandler.GetEvent(namespace, "Deployment", deployment.Name),
 			CreateTime:   deployment.CreationTimestamp.Format("2006-01-02 15:04:05"),
+			Labels:       ds.helper.LabelsFilter(deployment.Spec.Selector.MatchLabels),
 		})
 	}
 	return
@@ -120,11 +121,26 @@ func (ds *DeploymentService) DownToYaml(ns, name string) ([]byte, error) {
 	return nil, nil
 }
 
-func (ds *DeploymentService) Apply(ns string, deployment *v1.Deployment) error {
+func (ds *DeploymentService) Apply(ctx context.Context, ns string, deployment *v1.Deployment) error {
 
-	_, err := ds.Client.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
+	_, err := ds.Client.AppsV1().Deployments(ns).Create(ctx, deployment, metav1.CreateOptions{})
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (ds *DeploymentService) Rollout(ctx context.Context, ns, name string) error {
+	deployment, err := ds.GetDeployment(ns, name)
+	if err != nil {
+		return err
+	}
+	// 更新 Deployment 的标签
+	deployment.Spec.Template.ObjectMeta.Labels["restartedAt"] = metav1.Now().Format("2006-01-02_15-04-05")
+
+	_, updateErr := ds.Client.AppsV1().Deployments(ns).Update(ctx, deployment, metav1.UpdateOptions{})
+	if updateErr != nil {
+		return updateErr
 	}
 	return nil
 }

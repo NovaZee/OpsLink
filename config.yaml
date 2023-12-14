@@ -13,7 +13,7 @@ server:
 #    - "http://127.0.0.1:2379"
 #  dial_timeout: 5
 kubernetes:
-  kubeconfig: './denovo.yaml'
+  kubeconfig: './test.yaml'
 logging:
   level: debug
   json: false

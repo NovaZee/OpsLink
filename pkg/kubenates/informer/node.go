@@ -60,17 +60,3 @@ func (n *NodeInformer) ListAll() []*corev1.Node {
 	})
 	return nodes
 }
-
-// GetPodsNum 根据节点名称 获取pods数量
-func (n *NodeInformer) GetPodsNum(node string) (num int) {
-	n.localCache.Range(func(key, value interface{}) bool {
-		list := value.([]*corev1.Pod)
-		for _, pod := range list {
-			if pod.Spec.NodeName == node {
-				num++
-			}
-		}
-		return true
-	})
-	return
-}

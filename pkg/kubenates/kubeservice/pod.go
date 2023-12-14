@@ -35,7 +35,7 @@ func (ps *PodService) GetDetail(ctx context.Context, ns, name string) (*corev1.P
 // GetByLabelInCache kubectl get pods -l app=nginx -n default
 func (ps *PodService) GetByLabelInCache(ns, label string) (res []*kube.Pod, err error) {
 
-	pods, err := ps.Pi.ListALl(ns)
+	pods, err := ps.Pi.ListTargetALl(ns)
 
 	if err != nil {
 		return
@@ -70,7 +70,7 @@ func (ps *PodService) GetByLabel(ctx context.Context, ns, label string) (*corev1
 }
 
 func (ps *PodService) DownToYaml(ns, name string) ([]byte, error) {
-	pods, err := ps.Pi.ListALl(ns)
+	pods, err := ps.Pi.ListTargetALl(ns)
 	if err != nil {
 		return nil, err
 	}

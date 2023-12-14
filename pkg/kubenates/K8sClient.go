@@ -33,17 +33,13 @@ func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		logger.Infow("Program running from outside of the cluster")
-		set, kubecfg, err2 := NewClientSet(conf)
+		set, mc, err2 := NewClientSet(conf)
 		if err2 != nil {
 			return nil, err2
 		}
 		clientSet = set
-
-		mc, err3 := versioned.NewForConfig(kubecfg)
-		if err3 != nil {
-			return nil, err3
-		}
 		metricClient = mc
+		err = nil
 	} else {
 		kubeConfig :=
 			clientcmd.NewDefaultClientConfigLoadingRules().GetDefaultFilename()
@@ -81,18 +77,18 @@ func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
 
 // initHandlers 用于初始化 DepHandler 和 PodHandler
 func (k *K8sClient) initHandlers() {
-
-	k.NodeHandler = kubeservice.NewNodeService(k.MetricsClientSet)
 	k.EventHandler = kubeservice.NewEventService(k.Clientset)
 
 	k.DepHandler = kubeservice.NewDeploymentService(k.Clientset, k.EventHandler)
 	k.PodHandler = kubeservice.NewPodService(k.Clientset, k.EventHandler)
 	k.NamespaceHandler = kubeservice.NewNamespaceService(k.Clientset)
 
+	k.NodeHandler = kubeservice.NewNodeService(k.MetricsClientSet, k.PodHandler.Pi)
+
 }
 
 // NewClientSet Kubernetes客户端的接口实例D
-func NewClientSet(conf *config.OpsLinkConfig) (kubernetes.Interface, *rest.Config, error) {
+func NewClientSet(conf *config.OpsLinkConfig) (kubernetes.Interface, *versioned.Clientset, error) {
 	var err error
 	kubeconfig := conf.Kubernetes.Kubeconfig
 	configOverrides := &clientcmd.ConfigOverrides{}
@@ -108,7 +104,13 @@ func NewClientSet(conf *config.OpsLinkConfig) (kubernetes.Interface, *rest.Confi
 	if err != nil {
 		return nil, nil, err
 	}
-	return k8sClient, kubecfg, nil
+
+	mc, err3 := versioned.NewForConfig(kubecfg)
+	if err3 != nil {
+		return k8sClient, nil, err3
+	}
+
+	return k8sClient, mc, nil
 }
 
 // InitInformer informer初始化
@@ -117,6 +119,9 @@ func (k *K8sClient) InitInformer() informers.SharedInformerFactory {
 
 	deploymentInformer := sif.Apps().V1().Deployments()
 	deploymentInformer.Informer().AddEventHandler(k.DepHandler.Di)
+
+	node := sif.Core().V1().Nodes()
+	node.Informer().AddEventHandler(k.NodeHandler.Ni)
 
 	pods := sif.Core().V1().Pods()
 	pods.Informer().AddEventHandler(k.PodHandler.Pi)

@@ -85,6 +85,7 @@ func (pc *PodController) GetFromCache(ctx *gin.Context) {
 func (pc *PodController) List(ctx *gin.Context) {
 	_ = ctx.DefaultQuery("namespace", "default")
 }
+
 func (pc *PodController) Delete(ctx *gin.Context) {
 }
 

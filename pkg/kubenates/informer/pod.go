@@ -80,11 +80,21 @@ func (d *PodInformer) Delete(pod *corev1.Pod) {
 	}
 }
 
-// ListALl 内存中读取自定ns的pods列表
-func (d *PodInformer) ListALl(ns string) ([]*corev1.Pod, error) {
+// ListTargetALl 内存中读取自定ns的pods列表
+func (d *PodInformer) ListTargetALl(ns string) ([]*corev1.Pod, error) {
 	if pods, ok := d.localCache.Load(ns); ok {
 		return pods.([]*corev1.Pod), nil
 	}
 
 	return []*corev1.Pod{}, nil
+}
+
+// ListALl 内存中读取pods列表
+func (d *PodInformer) ListALl() ([]*corev1.Pod, error) {
+	var ret []*corev1.Pod
+	d.localCache.Range(func(key, value interface{}) bool {
+		ret = append(ret, value.([]*corev1.Pod)...)
+		return true
+	})
+	return ret, nil
 }

@@ -11,11 +11,13 @@ import (
 
 type NodeService struct {
 	Ni     *informer.NodeInformer
+	Pi     *informer.PodInformer
 	Metric *versioned.Clientset
+	helper *helper
 }
 
-func NewNodeService(client *versioned.Clientset) *NodeService {
-	return &NodeService{Ni: &informer.NodeInformer{}, Metric: client}
+func NewNodeService(client *versioned.Clientset, pi *informer.PodInformer) *NodeService {
+	return &NodeService{Ni: &informer.NodeInformer{}, Pi: pi, Metric: client, helper: &helper{}}
 }
 
 func (ns *NodeService) List(ctx context.Context) (res []*kube.Node) {
@@ -26,15 +28,15 @@ func (ns *NodeService) List(ctx context.Context) (res []*kube.Node) {
 			Name:     node.Name,
 			Ip:       node.Status.Addresses[0].Address,
 			HostName: node.Status.Addresses[1].Address,
-			//Labels: helpers.FilterLabels(node.Labels),
-			//Taints: helpers.FilterTaints(node.Spec.Taints),
+			Labels:   ns.helper.LabelsFilter(node.Labels),
+			Taints:   ns.helper.TaintsFilter(node.Spec.Taints),
 			Capacity: &kube.NodeCapacity{
 				Cpu:    node.Status.Capacity.Cpu().Value(),
 				Memory: node.Status.Capacity.Memory().Value(),
 				Pods:   node.Status.Capacity.Pods().Value(),
 			},
 			Usage: &kube.NodeUsage{
-				Pods:   int32(ns.Ni.GetPodsNum(node.Name)),
+				Pods:   int32(ns.GetPodsNum(node.Name)),
 				Cpu:    usage[0],
 				Memory: usage[1],
 			},
@@ -50,4 +52,15 @@ func GetUsage(c *versioned.Clientset, node *v1.Node, ctx context.Context) []floa
 	cpu := float64(nodeMetric.Usage.Cpu().MilliValue()) / float64(node.Status.Capacity.Cpu().MilliValue())
 	memory := float64(nodeMetric.Usage.Memory().MilliValue()) / float64(node.Status.Capacity.Memory().MilliValue())
 	return []float64{cpu, memory}
+}
+
+// GetPodsNum 根据节点名称 获取pods数量
+func (ns *NodeService) GetPodsNum(node string) (num int) {
+	pods, _ := ns.Pi.ListALl()
+	for _, pod := range pods {
+		if pod.Spec.NodeName == node {
+			num++
+		}
+	}
+	return
 }
