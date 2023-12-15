@@ -22,6 +22,8 @@ type K8sClient struct {
 	PodHandler       *kubeservice.PodService
 	NamespaceHandler *kubeservice.NamespaceService
 	EventHandler     *kubeservice.EventService
+	ConfigMapHandler *kubeservice.ConfigMapService
+	ServiceHandler   *kubeservice.ServiceService
 }
 
 func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
@@ -78,10 +80,12 @@ func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
 // initHandlers 用于初始化 DepHandler 和 PodHandler
 func (k *K8sClient) initHandlers() {
 	k.EventHandler = kubeservice.NewEventService(k.Clientset)
+	k.ConfigMapHandler = kubeservice.NewConfigMapService(k.Clientset)
 
 	k.DepHandler = kubeservice.NewDeploymentService(k.Clientset, k.EventHandler)
 	k.PodHandler = kubeservice.NewPodService(k.Clientset, k.EventHandler)
 	k.NamespaceHandler = kubeservice.NewNamespaceService(k.Clientset)
+	k.ServiceHandler = kubeservice.NewServiceService(k.Clientset)
 
 	k.NodeHandler = kubeservice.NewNodeService(k.Clientset, k.MetricsClientSet, k.PodHandler.Pi)
 
@@ -131,6 +135,10 @@ func (k *K8sClient) InitInformer() informers.SharedInformerFactory {
 
 	ns := sif.Core().V1().Namespaces()
 	ns.Informer().AddEventHandler(k.NamespaceHandler.Nsi)
+
+	sif.Core().V1().ConfigMaps().Informer().AddEventHandler(k.ConfigMapHandler.Cmi)
+
+	sif.Core().V1().Services().Informer().AddEventHandler(k.ServiceHandler.Si)
 
 	sif.Start(wait.NeverStop)
 

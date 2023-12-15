@@ -2,6 +2,7 @@ package kubeservice
 
 import (
 	"fmt"
+	"github.com/denovo/permission/protoc/kube"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -53,4 +54,23 @@ func (h *helper) TaintsFilter(taints []corev1.Taint) (ret []string) {
 		ret = append(ret, fmt.Sprintf("%s=%s:%s", taint.Key, taint.Value, taint.Effect))
 	}
 	return
+}
+
+func (h *helper) ToMap(data []*kube.Map) map[string]string {
+	res := make(map[string]string)
+	for _, item := range data {
+		res[item.Key] = item.Value
+	}
+	return res
+}
+
+func (h *helper) ToArray(data map[string]string) []*kube.Map {
+	var res []*kube.Map
+	for k, v := range data {
+		res = append(res, &kube.Map{
+			Key:   k,
+			Value: v,
+		})
+	}
+	return res
 }

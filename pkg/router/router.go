@@ -44,6 +44,8 @@ func (r *Router) InitHandler(opslinkServer *service.OpsLinkServer) {
 		kubehandler.BuildNode(opslinkServer.K8sClient.NodeHandler, JWT(opslinkServer.Casbin)),
 		kubehandler.BuildDeployments(opslinkServer.K8sClient.DepHandler, JWT(opslinkServer.Casbin)),
 		kubehandler.BuildPod(opslinkServer.K8sClient.PodHandler, JWT(opslinkServer.Casbin)),
+		kubehandler.BuildConfigMap(opslinkServer.K8sClient.ConfigMapHandler, JWT(opslinkServer.Casbin)),
+		kubehandler.BuildService(opslinkServer.K8sClient.ServiceHandler, JWT(opslinkServer.Casbin)),
 		kubehandler.BuildNamespace(opslinkServer.K8sClient.NamespaceHandler, JWT(opslinkServer.Casbin)),
 	}
 	r.handler = handlers

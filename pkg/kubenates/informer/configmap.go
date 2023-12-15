@@ -78,11 +78,25 @@ func (c *ConfigMapInformer) Update(configmap *v1.ConfigMap) error {
 	return fmt.Errorf("configmap-%s update error", configmap.Name)
 }
 
-// ListALl 内存中读取configmapList
-func (c *ConfigMapInformer) ListALl(namespace string) ([]*v1.ConfigMap, error) {
+func (c *ConfigMapInformer) List(namespace string) ([]*v1.ConfigMap, error) {
 	if configmapList, ok := c.localCache.Load(namespace); ok {
 		return configmapList.([]*v1.ConfigMap), nil
 	}
 
 	return []*v1.ConfigMap{}, nil
+}
+
+func (c *ConfigMapInformer) Get(namespace, name string) (*v1.ConfigMap, error) {
+	list, ok := c.localCache.Load(namespace)
+	if !ok {
+		return nil, fmt.Errorf("configmap-%s get error: not found in the cache", name)
+	}
+	lists := list.([]*v1.ConfigMap)
+	for _, configMap := range lists {
+		if configMap.Name == name {
+			return configMap, nil
+		}
+	}
+
+	return nil, nil
 }

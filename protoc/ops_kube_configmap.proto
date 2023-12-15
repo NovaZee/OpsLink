@@ -1,0 +1,14 @@
+syntax = "proto3";
+import "ops_collection.proto";
+
+package kube;
+
+option go_package = "/kube";
+
+message ConfigMap {
+  string name = 1;
+  string namespace = 2;
+  string CreateTime = 3;
+  repeated Map Data = 4;
+  bool update = 5;
+}

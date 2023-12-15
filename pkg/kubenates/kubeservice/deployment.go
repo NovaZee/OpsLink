@@ -5,10 +5,12 @@ import (
 	"github.com/denovo/permission/pkg/kubenates/informer"
 	"github.com/denovo/permission/protoc/kube"
 	"github.com/oppslink/protocol/logger"
-	"gopkg.in/yaml.v3"
+	v3yaml "gopkg.in/yaml.v3"
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
@@ -77,7 +79,7 @@ func (ds *DeploymentService) Update(ctx context.Context, ns, name string, update
 	}
 	deploymentData["apiVersion"] = "apps/v1"
 	deploymentData["kind"] = "Deployment"
-	deploymentByte, err := yaml.Marshal(deploymentData)
+	deploymentByte, err := v3yaml.Marshal(deploymentData)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +113,7 @@ func (ds *DeploymentService) DownToYaml(ns, name string) ([]byte, error) {
 			}
 			deploymentData["apiVersion"] = "apps/v1"
 			deploymentData["kind"] = "Deployment"
-			deploymentByte, err := yaml.Marshal(deploymentData)
+			deploymentByte, err := v3yaml.Marshal(deploymentData)
 			if err != nil {
 				return nil, err
 			}
@@ -121,9 +123,15 @@ func (ds *DeploymentService) DownToYaml(ns, name string) ([]byte, error) {
 	return nil, nil
 }
 
-func (ds *DeploymentService) Apply(ctx context.Context, ns string, deployment *v1.Deployment) error {
-
-	_, err := ds.Client.AppsV1().Deployments(ns).Create(ctx, deployment, metav1.CreateOptions{})
+func (ds *DeploymentService) ApplyByYaml(ctx context.Context, ns string, in []byte) error {
+	// create unstructured object
+	decode := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+	deployment := &v1.Deployment{}
+	_, _, err := decode.Decode(in, nil, deployment)
+	if err != nil {
+		return err
+	}
+	_, err = ds.Client.AppsV1().Deployments(ns).Create(ctx, deployment, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}

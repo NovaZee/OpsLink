@@ -1,0 +1,19 @@
+syntax = "proto3";
+import "ops_collection.proto";
+package kube;
+
+option go_package = "/kube";
+
+
+message service {
+  string name = 1;
+  string namespace = 2;
+  string Type = 3;
+  string cluster_ip = 4;
+  repeated string cluster_ips = 5;
+  repeated string ports = 6;
+  string create_time = 7;
+  repeated Map selector = 8;
+}
+
+
