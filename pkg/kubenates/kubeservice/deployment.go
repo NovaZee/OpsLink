@@ -123,7 +123,7 @@ func (ds *DeploymentService) DownToYaml(ns, name string) ([]byte, error) {
 	return nil, nil
 }
 
-func (ds *DeploymentService) ApplyByYaml(ctx context.Context, ns string, in []byte) error {
+func (ds *DeploymentService) ApplyByYaml(ctx context.Context, ns string, in []byte, isUpdate bool) error {
 	// create unstructured object
 	decode := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 	deployment := &v1.Deployment{}
@@ -131,7 +131,11 @@ func (ds *DeploymentService) ApplyByYaml(ctx context.Context, ns string, in []by
 	if err != nil {
 		return err
 	}
-	_, err = ds.Client.AppsV1().Deployments(ns).Create(ctx, deployment, metav1.CreateOptions{})
+	if isUpdate {
+		_, err = ds.Client.AppsV1().Deployments(ns).Update(ctx, deployment, metav1.UpdateOptions{})
+	} else {
+		_, err = ds.Client.AppsV1().Deployments(ns).Create(ctx, deployment, metav1.CreateOptions{})
+	}
 	if err != nil {
 		return err
 	}

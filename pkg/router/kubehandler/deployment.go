@@ -5,10 +5,8 @@ import (
 	"github.com/gin-gonic/gin"
 	v3yaml "gopkg.in/yaml.v3"
 	"io"
-	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/json"
 	"net/http"
 	"strconv"
 )
@@ -127,24 +125,18 @@ func (dc *DeploymentController) scale(ctx *gin.Context) {
 
 func (dc *DeploymentController) upgrade(ctx *gin.Context) {
 	ns := ctx.Param("ns")
-	name := ctx.Param("name")
-	all, err := io.ReadAll(ctx.Request.Body)
+	_ = ctx.Param("name")
+	deployment, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		KubeErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
-	deployment := &v1.Deployment{}
-	err = json.Unmarshal(all, deployment)
+	err = dc.DeploymentService.ApplyByYaml(ctx, ns, deployment, true)
 	if err != nil {
 		KubeErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
-	last, err := dc.DeploymentService.Update(ctx, ns, name, deployment)
-	if err != nil {
-		KubeErrorResponse(ctx, http.StatusBadRequest, err)
-		return
-	}
-	ctx.Data(http.StatusOK, "application/x-yaml", last)
+	KubeSuccessResponse(ctx, http.StatusOK)
 	return
 }
 
@@ -182,7 +174,7 @@ func (dc *DeploymentController) downYaml(ctx *gin.Context) {
 		return
 	}
 	// Set response headers for downloading the file
-	ctx.Header("Content-Disposition", "attachment; filename=deployment.yaml")
+	ctx.Header("Content-Disposition", "attachment; filename="+name+".yaml")
 	ctx.Header("Content-Type", "application/x-yaml")
 
 	// Send the Deployment YAML as a response
@@ -201,7 +193,7 @@ func (dc *DeploymentController) applyByYaml(ctx *gin.Context) {
 	defer file.Close()
 	// read to binary
 	data, err := io.ReadAll(file)
-	err = dc.DeploymentService.ApplyByYaml(ctx, ns, data)
+	err = dc.DeploymentService.ApplyByYaml(ctx, ns, data, false)
 	if err != nil {
 		KubeErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
@@ -217,7 +209,7 @@ func (dc *DeploymentController) Register(g *gin.Engine) {
 	{
 		deployments.GET("list", func(ctx *gin.Context) { dc.list(ctx) })
 		deployments.POST("delete/:ns/:name", func(ctx *gin.Context) { dc.delete(ctx) })
-		deployments.GET("download/:ns/:name", func(ctx *gin.Context) { dc.downYaml(ctx) })
+		deployments.GET("yaml/:ns/:name", func(ctx *gin.Context) { dc.downYaml(ctx) })
 		deployments.POST("apply/:ns", func(ctx *gin.Context) { dc.applyByYaml(ctx) })
 		deployments.PUT("patch/:ns/:name", func(ctx *gin.Context) { dc.patch(ctx) })
 		// deployment的所有更新操作

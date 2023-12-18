@@ -70,7 +70,7 @@ func (pc *PodController) downYaml(ctx *gin.Context) {
 		return
 	}
 	// Set response headers for downloading the file
-	ctx.Header("Content-Disposition", "attachment; filename=pod.yaml")
+	ctx.Header("Content-Disposition", "attachment; filename="+name+".yaml")
 	ctx.Header("Content-Type", "application/x-yaml")
 
 	// Send the Deployment YAML as a response
@@ -97,6 +97,6 @@ func (pc *PodController) Register(g *gin.Engine) {
 		pods.GET("getDetail/:ns/:name", func(ctx *gin.Context) { pc.GetFromApiServer(ctx) })
 		pods.GET("getPods", func(ctx *gin.Context) { pc.getPodsByLabel(ctx) })
 
-		pods.GET("download/:ns/:name", func(ctx *gin.Context) { pc.downYaml(ctx) })
+		pods.GET("yaml/:ns/:name", func(ctx *gin.Context) { pc.downYaml(ctx) })
 	}
 }

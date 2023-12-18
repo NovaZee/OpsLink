@@ -50,6 +50,8 @@ func (s *ServiceService) Get(ns, name string) (*corev1.Service, error) {
 	}
 	for _, service := range services {
 		if service.Name == name {
+			//apiVersion: v1
+			//kind: Service
 			return service, nil
 		}
 	}
@@ -80,7 +82,7 @@ func (s *ServiceService) DownToYaml(ns, name string) ([]byte, error) {
 	return nil, nil
 }
 
-func (s *ServiceService) ApplyByYaml(ctx context.Context, ns string, in []byte) error {
+func (s *ServiceService) ApplyByYaml(ctx context.Context, ns string, in []byte, isUpdate bool) error {
 	// create unstructured object
 	decode := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 	service := &corev1.Service{}
@@ -88,7 +90,11 @@ func (s *ServiceService) ApplyByYaml(ctx context.Context, ns string, in []byte) 
 	if err != nil {
 		return err
 	}
-	_, err = s.Client.CoreV1().Services(ns).Create(ctx, service, metav1.CreateOptions{})
+	if isUpdate {
+		_, err = s.Client.CoreV1().Services(ns).Update(ctx, service, metav1.UpdateOptions{})
+	} else {
+		_, err = s.Client.CoreV1().Services(ns).Create(ctx, service, metav1.CreateOptions{})
+	}
 	if err != nil {
 		return err
 	}

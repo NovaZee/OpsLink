@@ -51,7 +51,7 @@ func (sc *ServiceController) downYaml(ctx *gin.Context) {
 		return
 	}
 	// Set response headers for downloading the file
-	ctx.Header("Content-Disposition", "attachment; filename=deployment.yaml")
+	ctx.Header("Content-Disposition", "attachment; filename="+name+".yaml")
 	ctx.Header("Content-Type", "application/x-yaml")
 
 	// Send the Deployment YAML as a response
@@ -70,7 +70,7 @@ func (sc *ServiceController) applyByYaml(ctx *gin.Context) {
 	defer file.Close()
 	// read to binary
 	data, err := io.ReadAll(file)
-	err = sc.ServiceService.ApplyByYaml(ctx, ns, data)
+	err = sc.ServiceService.ApplyByYaml(ctx, ns, data, false)
 	if err != nil {
 		KubeErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
@@ -79,12 +79,34 @@ func (sc *ServiceController) applyByYaml(ctx *gin.Context) {
 	return
 }
 
+func (sc *ServiceController) update(ctx *gin.Context) {
+	ns := ctx.Param("ns")
+	_ = ctx.Param("name")
+	all, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		KubeErrorResponse(ctx, http.StatusBadRequest, err)
+		return
+	}
+	if err != nil {
+		KubeErrorResponse(ctx, http.StatusBadRequest, err)
+		return
+	}
+	err = sc.ServiceService.ApplyByYaml(ctx, ns, all, true)
+	if err != nil {
+		KubeErrorResponse(ctx, http.StatusBadRequest, err)
+		return
+	}
+	KubeSuccessResponse(ctx, http.StatusOK)
+	return
+}
+
 func (sc *ServiceController) Register(g *gin.Engine) {
 	services := g.Group("v1/services").Use(sc.middlewares...)
 	{
 		services.GET("", func(ctx *gin.Context) { sc.ListAll(ctx) })
 		services.GET("/:ns/:name", func(ctx *gin.Context) { sc.Get(ctx) })
-		services.GET("downYaml/:ns/:name", func(ctx *gin.Context) { sc.downYaml(ctx) })
+		services.GET("yaml/:ns/:name", func(ctx *gin.Context) { sc.downYaml(ctx) })
 		services.POST("apply/:ns", func(ctx *gin.Context) { sc.applyByYaml(ctx) })
+		services.POST("upgrade/:ns", func(ctx *gin.Context) { sc.update(ctx) })
 	}
 }
