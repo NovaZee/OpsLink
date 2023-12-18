@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package kube;
+
+option go_package = "/kube";
+
+
+message namespace {
+  string namespace = 1;
+  string status = 2;
+  string create_time = 3;
+}
+

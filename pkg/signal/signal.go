@@ -1,12 +1,12 @@
-package service
+package signal
 
 import "net/http"
 
 type MuxHandler struct {
-	handler Handler
+	Handler Handler
 
-	// next stores the next.ServeHTTP to reduce memory allocate
-	next func(rw http.ResponseWriter, r *http.Request)
+	// Next stores the next.ServeHTTP to reduce memory allocate
+	Next func(rw http.ResponseWriter, r *http.Request)
 }
 
 type Handler interface {
@@ -14,7 +14,7 @@ type Handler interface {
 }
 
 func (m MuxHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	m.handler.ServeHTTP(rw, r, m.next)
+	m.Handler.ServeHTTP(rw, r, m.Next)
 }
 
 type MessageSink interface {

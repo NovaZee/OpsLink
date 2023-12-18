@@ -5,13 +5,10 @@ import (
 	"github.com/gin-gonic/gin"
 	v3yaml "gopkg.in/yaml.v3"
 	"io"
-	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-	"k8s.io/apimachinery/pkg/util/json"
 	"net/http"
+	"strconv"
 )
 
 type DeploymentController struct {
@@ -95,25 +92,51 @@ func (dc *DeploymentController) patch(ctx *gin.Context) {
 	return
 }
 
-func (dc *DeploymentController) update(ctx *gin.Context) {
+func (dc *DeploymentController) scale(ctx *gin.Context) {
 	ns := ctx.Param("ns")
 	name := ctx.Param("name")
-	all, err := io.ReadAll(ctx.Request.Body)
+	scale := ctx.Query("scale")
+	deployment, err := dc.DeploymentService.GetDeployment(ns, name)
 	if err != nil {
 		KubeErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
-	deployment := &v1.Deployment{}
-	err = json.Unmarshal(all, deployment)
+	atoi, err := strconv.ParseInt(scale, 10, 32)
 	if err != nil {
 		KubeErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
+	valInt32 := int32(atoi)
+	replicas := *deployment.Spec.Replicas
+	if valInt32 == replicas {
+		KubeSuccessResponse(ctx, http.StatusOK)
+		return
+	}
+	deployment.Spec.Replicas = &valInt32
+
 	_, err = dc.DeploymentService.Update(ctx, ns, name, deployment)
 	if err != nil {
 		KubeErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
+	KubeSuccessResponse(ctx, http.StatusOK)
+	return
+}
+
+func (dc *DeploymentController) upgrade(ctx *gin.Context) {
+	ns := ctx.Param("ns")
+	_ = ctx.Param("name")
+	deployment, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		KubeErrorResponse(ctx, http.StatusBadRequest, err)
+		return
+	}
+	err = dc.DeploymentService.ApplyByYaml(ctx, ns, deployment, true)
+	if err != nil {
+		KubeErrorResponse(ctx, http.StatusBadRequest, err)
+		return
+	}
+	KubeSuccessResponse(ctx, http.StatusOK)
 	return
 }
 
@@ -129,6 +152,18 @@ func (dc *DeploymentController) delete(ctx *gin.Context) {
 	return
 }
 
+func (dc *DeploymentController) Rollout(ctx *gin.Context) {
+	ns := ctx.Param("ns")
+	name := ctx.Param("name")
+	err := dc.DeploymentService.Rollout(ctx, ns, name)
+	if err != nil {
+		KubeErrorResponse(ctx, http.StatusInternalServerError, err)
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"data": "success", "status": http.StatusOK})
+	return
+}
+
 func (dc *DeploymentController) downYaml(ctx *gin.Context) {
 	ns := ctx.Param("ns")
 	name := ctx.Param("name")
@@ -139,7 +174,7 @@ func (dc *DeploymentController) downYaml(ctx *gin.Context) {
 		return
 	}
 	// Set response headers for downloading the file
-	ctx.Header("Content-Disposition", "attachment; filename=deployment.yaml")
+	ctx.Header("Content-Disposition", "attachment; filename="+name+".yaml")
 	ctx.Header("Content-Type", "application/x-yaml")
 
 	// Send the Deployment YAML as a response
@@ -149,26 +184,16 @@ func (dc *DeploymentController) downYaml(ctx *gin.Context) {
 
 func (dc *DeploymentController) applyByYaml(ctx *gin.Context) {
 	ns := ctx.Param("ns")
-	// 从请求中获取上传的文件
+	// upload file
 	file, _, err := ctx.Request.FormFile("file")
 	if err != nil {
 		KubeErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}
 	defer file.Close()
-	// 读取上传的文件内容为二进制字节流
+	// read to binary
 	data, err := io.ReadAll(file)
-
-	// 创建一个 Unstructured 对象来装载 YAML 内容
-	decode := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
-	deployment := &v1.Deployment{}
-	_, _, err = decode.Decode(data, nil, deployment)
-	if err != nil {
-		KubeErrorResponse(ctx, http.StatusInternalServerError, err)
-		return
-	}
-
-	err = dc.DeploymentService.Apply(ns, deployment)
+	err = dc.DeploymentService.ApplyByYaml(ctx, ns, data, false)
 	if err != nil {
 		KubeErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
@@ -182,12 +207,16 @@ func (dc *DeploymentController) Register(g *gin.Engine) {
 
 	deployments := g.Group("v1/deployments").Use(dc.middlewares...)
 	{
-		deployments.GET("list", func(ctx *gin.Context) { dc.list(ctx) }) ///deployments?namespace=
+		deployments.GET("list", func(ctx *gin.Context) { dc.list(ctx) })
 		deployments.POST("delete/:ns/:name", func(ctx *gin.Context) { dc.delete(ctx) })
-		deployments.GET("download/:ns/:name", func(ctx *gin.Context) { dc.downYaml(ctx) })
+		deployments.GET("yaml/:ns/:name", func(ctx *gin.Context) { dc.downYaml(ctx) })
 		deployments.POST("apply/:ns", func(ctx *gin.Context) { dc.applyByYaml(ctx) })
 		deployments.PUT("patch/:ns/:name", func(ctx *gin.Context) { dc.patch(ctx) })
-		deployments.POST("update/:ns/:name", func(ctx *gin.Context) { dc.update(ctx) })
+		// deployment的所有更新操作
+		deployments.POST("upgrade/:ns/:name", func(ctx *gin.Context) { dc.upgrade(ctx) })
 		deployments.GET("checkout/:ns/:name", func(ctx *gin.Context) { dc.checkout(ctx) })
+		deployments.GET("rollout/:ns/:name", func(ctx *gin.Context) { dc.Rollout(ctx) })
+
+		deployments.PUT("scale/:ns/:name", func(ctx *gin.Context) { dc.scale(ctx) })
 	}
 }

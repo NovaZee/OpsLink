@@ -1,0 +1,42 @@
+syntax = "proto3";
+import "ops_collection.proto";
+package kube;
+
+option go_package = "/kube";
+
+message node {
+  string name = 1;
+  string ip = 2;
+  string host_name = 3;
+  repeated string labels = 6;
+  repeated string taints = 7;
+  NodeCapacity capacity = 8;
+  NodeUsage usage = 9;
+  string create_time = 10;
+}
+
+message NodeUsage {
+  int32 pods = 1;
+  double cpu = 2;
+  double memory = 3;
+}
+
+message NodeCapacity {
+  int64 cpu = 1;
+  int64 memory = 2;
+  int64 pods = 3;
+}
+
+message Taint {
+   string key = 1;
+   string value = 2;
+   string effect = 3;
+}
+
+
+
+message FrontNode {
+  string name = 1;
+  repeated Map labels = 2;
+  repeated Taint taints = 3;
+}

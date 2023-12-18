@@ -14,4 +14,6 @@ message Deployment {
   string message = 6;
   string create_time = 7;
   repeated Pod pods = 8;
+  string event_message = 9;
+  repeated string labels = 10;
 }

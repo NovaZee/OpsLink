@@ -13,7 +13,7 @@ message Pod {
   repeated string ip = 5;
   string phase = 6;
   bool is_ready = 7;
-  string message = 8;
+  string event_message = 8;
   string create_time = 9;
 }
 

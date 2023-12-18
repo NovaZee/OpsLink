@@ -1,4 +1,4 @@
-package service
+package signal
 
 type HubSet struct {
 	// Registered clients.

@@ -1,6 +1,7 @@
 package router
 
 import (
+	"fmt"
 	"github.com/denovo/permission/pkg/casbin"
 	"github.com/denovo/permission/pkg/util"
 	"github.com/gin-gonic/gin"
@@ -16,7 +17,7 @@ func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 执行时间
 		nowTime := time.Now()
-		logger.Infow(" http request",
+		logger.Debugw(" http request",
 			zap.Any(" request", c.Request.URL),
 			zap.String("ip", c.ClientIP()),
 			zap.Duration("latency", time.Since(nowTime)),
@@ -30,7 +31,8 @@ func JWT(cb *casbin.Casbin) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if r := recover(); r != nil {
-				logger.Debugw("jwt check ", "error", r, "http errorCode", c.Writer.Status())
+				logger.Debugw("jwt check ", "error", r)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%s", r), "status": http.StatusInternalServerError})
 			}
 		}()
 		token := c.GetHeader("Authorization")

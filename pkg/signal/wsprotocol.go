@@ -1,4 +1,4 @@
-package service
+package signal
 
 import (
 	"github.com/denovo/permission/protoc/model"

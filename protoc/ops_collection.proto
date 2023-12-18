@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package kube;
+
+option go_package = "/kube";
+
+message Map {
+  string key = 1;
+  string value = 2;
+}
