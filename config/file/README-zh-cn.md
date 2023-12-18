@@ -1,40 +1,34 @@
 
 # OpsLink
 
-Role-based authentication Kubernetes container management platform
+基于角色订阅的K8S管理平台
 
-# Doc
-[中文](./config/file/README-zh-cn.md) | [English](../README.md)
+[中文](./config/file/README-zh-cn.md) | [English](README.md)
+## 特性
 
+- 基于角色的 Kubernetes （k8s） 资源订阅模式资源推送
+- Kubernetes （k8s） 资源的基本CRUD操作
+- 基于 JWT 和 Casbin 的身份认证和授权
 
-## Features
+## 运行
 
-- Role-based subscription for Kubernetes (k8s) resource delivery
-- Basic CRUD Operations for k8s Resources
-- Identity Authentication and Authorization based on JWT and Casbin
-
-## Running
-
-Clone
+克隆
 
 ```bash
   git clone https://github.com/NovaZee/OpsLink.git
 ```
 
-Install
+安装依赖
 
 ```bash
   go mod tidy
 ```
 
-Run
+运行
 
 ```bash
   ./OpsLink --config /config.yaml
 ```
-
-
-
 # Config
 
 ```yaml
