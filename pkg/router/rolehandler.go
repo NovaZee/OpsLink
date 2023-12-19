@@ -89,8 +89,8 @@ func (rh *RoleHandler) SignIn(ctx *gin.Context) {
 		ErrorResponse(ctx, http.StatusBadRequest, "用户生成失败")
 		return
 	}
-	// 成员权限初始化
-	_ = rh.casbin.AddGroupingPolicy(newRole.Name, casbin.GroupRead)
+	//// TODO:成员权限初始化
+	//_ = rh.casbin.AddGroupingPolicy(newRole.Name, casbin.GroupRead)
 	ctx.JSON(http.StatusOK, gin.H{"message": token, "status": http.StatusOK})
 	return
 }

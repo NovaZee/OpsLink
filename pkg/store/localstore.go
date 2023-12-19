@@ -127,8 +127,9 @@ func (ls *LocalStore) loadDistFile() error {
 			logger.Errorw("Load Roles File Error!", createErr)
 			return createErr
 		}
-		//ls.WriteData()
+		ls.InitAdminRole()
 		defer emptyFile.Close()
+
 		logger.Infow("Load Roles File Success!")
 	} else {
 		err := ls.ReadData()
@@ -183,6 +184,17 @@ func (ls *LocalStore) dataSyncHandler() {
 				ls.lock.Unlock()
 			}
 		}
+	}
+}
+
+func (ls *LocalStore) InitAdminRole() {
+
+	role := &model.Role{Name: "admin", Password: "root", Id: 1}
+	ls.LocalRoles.Roles = append(ls.LocalRoles.Roles, role)
+	err := ls.WriteData()
+	if err != nil {
+		logger.Warnw("InitAdminRole error!", err)
+		return
 	}
 }
 

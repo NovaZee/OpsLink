@@ -12,28 +12,34 @@ var (
 	CasbinSetting *config.CasbinModelPath
 )
 
+// domain 域
+const (
+	KubeSystem = "kube-system"
+	Default    = "default"
+)
+
+// 角色
+const (
+	Owner      = "owner"
+	User       = "user"
+	SuperAdmin = "super_admin"
+)
+
+const (
+	AdminRoot = "admin"
+	OpsLink   = "opslink"
+)
+
+// 资源,行为
+const ()
+
 // 权限
 const (
-	Read  = "read"
+	Read = "read"
+	/**
+	 *write包括当前资源的所有操作权限
+	 */
 	Write = "write"
-	Admin = "owner"
-)
-
-// 权限组
-const (
-	GroupRead    = "role_read"
-	GroupWrite   = "role_write"
-	GroupManager = "role_manager"
-)
-
-// 资源
-const (
-	// http 资源
-	HttpV1      = "/v1"
-	HttpManager = "/manager"
-
-	//todo：k8s资源
-
 )
 
 type Casbin struct {
@@ -55,8 +61,9 @@ type CasbinAdapter struct {
 type CasbinModel struct {
 	PType    string `json:"p_type" form:"p_type" description:"策略"`
 	Role     string `json:"role" form:"v0" description:"角色/用户"`
-	Source   string `json:"source" form:"v1" description:"资源"`
-	Behavior string `json:"behavior" form:"v2" description:"行为"`
+	Domain   string `json:"domain" form:"v1" description:"域"`
+	Source   string `json:"source" form:"v2" description:"资源"`
+	Behavior string `json:"behavior" form:"v3" description:"行为"`
 }
 
 func InitCasbin(conf *config.OpsLinkConfig) (*Casbin, error) {
@@ -76,30 +83,48 @@ func InitCasbin(conf *config.OpsLinkConfig) (*Casbin, error) {
 }
 
 func (c *Casbin) InitPermission() {
+	//p, super_admin, *, *, write
+	//p, owner, default, *, write
+	//p, user, kube-system, *, read
+	//g, admin, super_admin, *
+	//g, opslink, user, kube-system
+	//g, opslink, owner, default
 
-	// p, role_read, /v1, read
-	// p, role_write, /v1, write
-	// p, role_manager, /v1/manager, owner
-
-	// roles init
-	roleRead := c.Enforcer.HasPolicy(GroupRead, HttpV1, Read)
-	if !roleRead {
-		c.Enforcer.AddPolicy(GroupRead, HttpV1, Read)
-		logger.Infow("InitPermission", GroupRead, "read policy init success!")
-	}
-	roleWrite := c.Enforcer.HasPolicy(GroupWrite, HttpV1, Write)
-	if !roleWrite {
-		c.Enforcer.AddPolicy(GroupWrite, HttpV1, Write)
-		logger.Infow("InitPermission", GroupWrite, "write policy ini success!")
-	}
-	roleManager := c.Enforcer.HasPolicy(GroupManager, HttpManager, Admin)
-	if !roleManager {
-		c.Enforcer.AddPolicy(GroupManager, HttpManager, Admin)
-		logger.Infow("InitPermission", GroupManager, "admin policy init success!")
+	//p, superAdmin, *, *, write
+	superAdminExists := c.Enforcer.HasPolicy(SuperAdmin, "*", "*", Write)
+	if !superAdminExists {
+		c.Enforcer.AddPolicy(SuperAdmin, "*", "*", Write)
+		logger.Infow("InitPermission", SuperAdmin, "super admin policy init success!")
 	}
 
-	// admin role init
-	_ = c.Enforcer.AddGroupingPolicy("admin", GroupManager)
+	//g, admin, superAdmin, *
+	adminExists := c.Enforcer.HasGroupingPolicy(AdminRoot, SuperAdmin, "*")
+	if !adminExists {
+		c.Enforcer.AddGroupingPolicy(AdminRoot, SuperAdmin, "*")
+		logger.Infow("InitPermission", AdminRoot, "admin role init success!")
+	}
+
+	//g, opslink, user, kube-system
+	opsKube := c.Enforcer.HasGroupingPolicy(OpsLink, User, KubeSystem)
+	if !opsKube {
+		c.Enforcer.AddGroupingPolicy(OpsLink, User, KubeSystem)
+	}
+	//g, opslink, owner, default
+	opsDefault := c.Enforcer.HasGroupingPolicy(OpsLink, Owner, Default)
+	if !opsDefault {
+		c.Enforcer.AddGroupingPolicy(OpsLink, Owner, Default)
+	}
+	//p, owner, default, *, write
+	kubeRead := c.Enforcer.HasPolicy(Owner, Default, "*", Write)
+	if !kubeRead {
+		c.Enforcer.AddPolicy(Owner, Default, "*", Write)
+	}
+	//p, user, kube-system, *, read
+	deafultWrite := c.Enforcer.HasPolicy(User, KubeSystem, "*", Read)
+	if !deafultWrite {
+		c.Enforcer.AddPolicy(User, KubeSystem, "*", Read)
+	}
+
 	err := c.Enforcer.SavePolicy()
 	if err != nil {
 		return
@@ -231,4 +256,8 @@ func loadCsv() {
 	} else {
 		logger.Infow("CSV File Already exits!", "path", config.CasbinCsvPath)
 	}
+}
+
+func adminMatch(role string) bool {
+	return role == SuperAdmin || role == AdminRoot
 }

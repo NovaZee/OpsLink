@@ -54,13 +54,14 @@ func JWT(cb *casbin.Casbin) gin.HandlerFunc {
 				"status": http.StatusBadRequest,
 			})
 		}
-		enforce := cb.Enforcer.Enforce(claims.UserName, casbin.HttpV1, casbin.Read)
-		if !enforce {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error":  ErrorAuthCheckTokenFail,
-				"status": http.StatusForbidden,
-			})
-		}
+		//TODO:
+		//enforce := cb.Enforcer.Enforce(claims.UserName, casbin.HttpV1, casbin.Read)
+		//if !enforce {
+		//	c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+		//		"error":  ErrorAuthCheckTokenFail,
+		//		"status": http.StatusForbidden,
+		//	})
+		//}
 		c.Next()
 	}
 }
@@ -69,7 +70,8 @@ func JWT(cb *casbin.Casbin) gin.HandlerFunc {
 func ManagerMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		switch c.Query("behavior") {
-		case casbin.Read, casbin.Write, casbin.Admin:
+		//TODO:
+		case casbin.Read, casbin.Write, casbin.Owner:
 			c.Next()
 		default:
 			// 当权限不足时，终止请求并返回JSON响应
