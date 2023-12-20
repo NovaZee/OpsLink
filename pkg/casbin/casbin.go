@@ -16,15 +16,23 @@ var (
 const (
 	KubeSystem = "kube-system"
 	Default    = "default"
+	All        = "*"
 )
 
-// 角色
+// 角色身份
+// owner 所有权  write
+// user 用户   read
+// super_admin 超级管理员
 const (
-	Owner      = "owner"
+	Admin      = "admin"
 	User       = "user"
-	SuperAdmin = "super_admin"
+	SuperAdmin = "superAdmin"
+	InitAdmin  = "initAdmin"
 )
 
+// 内置用户
+// 初始化admin：opslink 初始化默认资源的超级权限(kube-system&default)-----initAdmin
+// 超级root：admin k8s所有资源的超级权限-----superAdmin
 const (
 	AdminRoot = "admin"
 	OpsLink   = "opslink"
@@ -33,12 +41,9 @@ const (
 // 资源,行为
 const ()
 
-// 权限
+// 权限 C->B->A  A包括B,C  B包括C
 const (
-	Read = "read"
-	/**
-	 *write包括当前资源的所有操作权限
-	 */
+	Read  = "read"
 	Write = "write"
 )
 
@@ -83,46 +88,38 @@ func InitCasbin(conf *config.OpsLinkConfig) (*Casbin, error) {
 }
 
 func (c *Casbin) InitPermission() {
-	//p, super_admin, *, *, write
-	//p, owner, default, *, write
-	//p, user, kube-system, *, read
-	//g, admin, super_admin, *
-	//g, opslink, user, kube-system
-	//g, opslink, owner, default
+	//p, initAdmin, default, *, write
+	//p, initAdmin, kube-system, *, write
 
-	//p, superAdmin, *, *, write
-	superAdminExists := c.Enforcer.HasPolicy(SuperAdmin, "*", "*", Write)
-	if !superAdminExists {
-		c.Enforcer.AddPolicy(SuperAdmin, "*", "*", Write)
-		logger.Infow("InitPermission", SuperAdmin, "super admin policy init success!")
-	}
+	//g, admin, superAdmin
+	//g, opslink, initAdmin
 
-	//g, admin, superAdmin, *
-	adminExists := c.Enforcer.HasGroupingPolicy(AdminRoot, SuperAdmin, "*")
+	//g, admin, superAdmin
+	adminExists := c.Enforcer.HasGroupingPolicy(AdminRoot, SuperAdmin)
 	if !adminExists {
-		c.Enforcer.AddGroupingPolicy(AdminRoot, SuperAdmin, "*")
+		c.Enforcer.AddGroupingPolicy(AdminRoot, SuperAdmin)
 		logger.Infow("InitPermission", AdminRoot, "admin role init success!")
 	}
 
-	//g, opslink, user, kube-system
-	opsKube := c.Enforcer.HasGroupingPolicy(OpsLink, User, KubeSystem)
+	//g, opslink, initAdmin
+	opsKube := c.Enforcer.HasGroupingPolicy(OpsLink, InitAdmin)
 	if !opsKube {
-		c.Enforcer.AddGroupingPolicy(OpsLink, User, KubeSystem)
+		c.Enforcer.AddGroupingPolicy(OpsLink, InitAdmin)
 	}
-	//g, opslink, owner, default
-	opsDefault := c.Enforcer.HasGroupingPolicy(OpsLink, Owner, Default)
-	if !opsDefault {
-		c.Enforcer.AddGroupingPolicy(OpsLink, Owner, Default)
+	//p, superAdmin, *, *, write
+	superAdmin := c.Enforcer.HasPolicy(SuperAdmin, All, All, Write)
+	if !superAdmin {
+		c.Enforcer.AddPolicy(SuperAdmin, All, All, Write)
 	}
-	//p, owner, default, *, write
-	kubeRead := c.Enforcer.HasPolicy(Owner, Default, "*", Write)
+	//p, initAdmin, default, *, write
+	kubeRead := c.Enforcer.HasPolicy(InitAdmin, Default, All, Write)
 	if !kubeRead {
-		c.Enforcer.AddPolicy(Owner, Default, "*", Write)
+		c.Enforcer.AddPolicy(InitAdmin, Default, All, Write)
 	}
-	//p, user, kube-system, *, read
-	deafultWrite := c.Enforcer.HasPolicy(User, KubeSystem, "*", Read)
+	//p, initAdmin, kube-system, *, write
+	deafultWrite := c.Enforcer.HasPolicy(InitAdmin, KubeSystem, All, Write)
 	if !deafultWrite {
-		c.Enforcer.AddPolicy(User, KubeSystem, "*", Read)
+		c.Enforcer.AddPolicy(InitAdmin, KubeSystem, All, Write)
 	}
 
 	err := c.Enforcer.SavePolicy()
@@ -131,9 +128,10 @@ func (c *Casbin) InitPermission() {
 	}
 
 }
-func NewCasbinModel(s2 string, s3 string, s4 string) *CasbinModel {
+func NewCasbinModel(s1, s2, s3, s4 string) *CasbinModel {
 	return &CasbinModel{
-		Role:     s2,
+		Role:     s1,
+		Domain:   s2,
 		Source:   s3,
 		Behavior: s4,
 	}
@@ -144,6 +142,7 @@ func (c *CasbinAdapter) Casbin() (*casbin.Enforcer, error) {
 	// Init etcd adapter
 	adapter := etcdadapter.NewAdapter(c.etcdEndpoint, c.key)
 	enforcer := casbin.NewEnforcer(c.modelConf, adapter)
+	enforcer.AddFunction("isSuper", isSuper)
 	_ = enforcer.LoadPolicy()
 	return enforcer, nil
 }
@@ -211,6 +210,7 @@ type EtcdAdapterProvider struct {
 func (eap *EtcdAdapterProvider) GetEnforcer(modelConf string) (*casbin.Enforcer, error) {
 	adapter := etcdadapter.NewAdapter(eap.etcdEndpoint, eap.key)
 	enforcer := casbin.NewEnforcer(modelConf, adapter)
+	enforcer.AddFunction("isSuper", isSuper)
 	_ = enforcer.LoadPolicy()
 	enforcer.EnableAutoSave(true)
 	return enforcer, nil
@@ -223,6 +223,7 @@ type CsvAdapterProvider struct {
 
 func (cap *CsvAdapterProvider) GetEnforcer(modelConf string) (*casbin.Enforcer, error) {
 	enforcer := casbin.NewEnforcer(modelConf, cap.csvFilePath)
+	enforcer.AddFunction("isSuper", isSuper)
 	_ = enforcer.LoadPolicy()
 	// enable auto save todo：is valid?
 	enforcer.EnableAutoSave(true)
@@ -258,6 +259,10 @@ func loadCsv() {
 	}
 }
 
-func adminMatch(role string) bool {
-	return role == SuperAdmin || role == AdminRoot
+func isSuperAdminMatch(userName string) bool {
+	return userName == AdminRoot
+}
+func isSuper(args ...interface{}) (interface{}, error) {
+	userName := args[0].(string)
+	return (bool)(isSuperAdminMatch(userName)), nil
 }

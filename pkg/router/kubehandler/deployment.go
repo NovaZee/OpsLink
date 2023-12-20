@@ -13,13 +13,11 @@ import (
 
 type DeploymentController struct {
 	DeploymentService *kubeservice.DeploymentService
-	middlewares       []gin.HandlerFunc
 }
 
-func BuildDeployments(ds *kubeservice.DeploymentService, middleware ...gin.HandlerFunc) *DeploymentController {
+func BuildDeployments(ds *kubeservice.DeploymentService) *DeploymentController {
 	return &DeploymentController{
 		DeploymentService: ds,
-		middlewares:       middleware,
 	}
 }
 
@@ -202,21 +200,37 @@ func (dc *DeploymentController) applyByYaml(ctx *gin.Context) {
 	return
 }
 
-// Register 实现deployment controller 路由 框架规范
-func (dc *DeploymentController) Register(g *gin.Engine) {
+// MiddleHandler 实现deployment controller 路由 框架规范
+func (dc *DeploymentController) MiddleHandler() string {
+	return "deployments"
+}
 
-	deployments := g.Group("v1/deployments").Use(dc.middlewares...)
+// GetName 实现deployment controller 路由 框架规范
+func (dc *DeploymentController) GetName() string {
+	return "deployments"
+}
+
+// ReadRegister 实现deployment controller 路由 框架规范
+func (dc *DeploymentController) ReadRegister(g *gin.RouterGroup, middle ...gin.HandlerFunc) {
+	rd := g.Use(middle...)
 	{
-		deployments.GET("list", func(ctx *gin.Context) { dc.list(ctx) })
-		deployments.POST("delete/:ns/:name", func(ctx *gin.Context) { dc.delete(ctx) })
-		deployments.GET("yaml/:ns/:name", func(ctx *gin.Context) { dc.downYaml(ctx) })
-		deployments.POST("apply/:ns", func(ctx *gin.Context) { dc.applyByYaml(ctx) })
-		deployments.PUT("patch/:ns/:name", func(ctx *gin.Context) { dc.patch(ctx) })
-		// deployment的所有更新操作
-		deployments.POST("upgrade/:ns/:name", func(ctx *gin.Context) { dc.upgrade(ctx) })
-		deployments.GET("checkout/:ns/:name", func(ctx *gin.Context) { dc.checkout(ctx) })
-		deployments.GET("rollout/:ns/:name", func(ctx *gin.Context) { dc.Rollout(ctx) })
+		rd.GET("list", func(ctx *gin.Context) { dc.list(ctx) })
+		rd.GET("yaml/:ns/:name", func(ctx *gin.Context) { dc.downYaml(ctx) })
+		rd.GET("checkout/:ns/:name", func(ctx *gin.Context) { dc.checkout(ctx) })
+	}
+}
 
-		deployments.PUT("scale/:ns/:name", func(ctx *gin.Context) { dc.scale(ctx) })
+// WriteRegister 实现deployment controller 路由 框架规范
+func (dc *DeploymentController) WriteRegister(g *gin.RouterGroup, middle ...gin.HandlerFunc) {
+	wd := g.Use(middle...)
+	{
+		wd.POST("delete/:ns/:name", func(ctx *gin.Context) { dc.delete(ctx) })
+		wd.POST("apply/:ns", func(ctx *gin.Context) { dc.applyByYaml(ctx) })
+		wd.PUT("patch/:ns/:name", func(ctx *gin.Context) { dc.patch(ctx) })
+		// deployment的所有更新操作
+		wd.POST("upgrade/:ns/:name", func(ctx *gin.Context) { dc.upgrade(ctx) })
+		wd.GET("rollout/:ns/:name", func(ctx *gin.Context) { dc.Rollout(ctx) })
+
+		wd.PUT("scale/:ns/:name", func(ctx *gin.Context) { dc.scale(ctx) })
 	}
 }

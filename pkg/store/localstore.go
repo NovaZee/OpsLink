@@ -190,7 +190,8 @@ func (ls *LocalStore) dataSyncHandler() {
 func (ls *LocalStore) InitAdminRole() {
 
 	role := &model.Role{Name: "admin", Password: "root", Id: 1}
-	ls.LocalRoles.Roles = append(ls.LocalRoles.Roles, role)
+	opslink := &model.Role{Name: "opslink", Password: "opslink", Id: 2}
+	ls.LocalRoles.Roles = append(ls.LocalRoles.Roles, role, opslink)
 	err := ls.WriteData()
 	if err != nil {
 		logger.Warnw("InitAdminRole error!", err)

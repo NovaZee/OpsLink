@@ -32,7 +32,8 @@ func JWT(cb *casbin.Casbin) gin.HandlerFunc {
 		defer func() {
 			if r := recover(); r != nil {
 				logger.Debugw("jwt check ", "error", r)
-				c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%s", r), "status": http.StatusInternalServerError})
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%s", r), "status": http.StatusInternalServerError})
+				return
 			}
 		}()
 		token := c.GetHeader("Authorization")
@@ -55,13 +56,14 @@ func JWT(cb *casbin.Casbin) gin.HandlerFunc {
 			})
 		}
 		//TODO:
-		//enforce := cb.Enforcer.Enforce(claims.UserName, casbin.HttpV1, casbin.Read)
-		//if !enforce {
-		//	c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-		//		"error":  ErrorAuthCheckTokenFail,
-		//		"status": http.StatusForbidden,
-		//	})
-		//}
+		//获取请求的资源
+		enforce := cb.Enforcer.Enforce("A", "kube-system", "B", casbin.Write)
+		if !enforce {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error":  ErrorAuthCheckTokenFail,
+				"status": http.StatusForbidden,
+			})
+		}
 		c.Next()
 	}
 }
@@ -71,7 +73,7 @@ func ManagerMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		switch c.Query("behavior") {
 		//TODO:
-		case casbin.Read, casbin.Write, casbin.Owner:
+		case casbin.Write, casbin.Read:
 			c.Next()
 		default:
 			// 当权限不足时，终止请求并返回JSON响应
@@ -80,5 +82,27 @@ func ManagerMiddleware() gin.HandlerFunc {
 				"status": http.StatusForbidden,
 			})
 		}
+	}
+}
+
+//list资源列表单独设置中间件
+
+// ExtractParams 对于read或者write的中间件权限控制
+func ExtractParams() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 从请求中获取参数，这里以获取 query 参数为例
+		user := c.Query("user")
+		ns := c.Query("namespace")
+		res := c.Query("resource")
+		action := c.Query("action")
+
+		// 将获取的参数存入 Gin 的上下文中
+		c.Set("user", user)
+		c.Set("ns", ns)
+		c.Set("res", res)
+		c.Set("action", action)
+
+		// 继续后续处理
+		c.Next()
 	}
 }

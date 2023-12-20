@@ -1,6 +1,6 @@
-p, super_admin, *, *, write
-p, owner, default, *, write
-p, user, kube-system, *, read
-g, admin, super_admin, *
-g, opslink, user, kube-system
-g, opslink, owner, default
+p, initAdmin, default, *, write
+p, initAdmin, kube-system, *, write
+p, superAdmin, *, *, write
+p, A, kube-system, *, write
+g, admin, superAdmin
+g, opslink, initAdmin
