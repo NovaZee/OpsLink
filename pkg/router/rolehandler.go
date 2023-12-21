@@ -95,7 +95,15 @@ func (rh *RoleHandler) SignIn(ctx *gin.Context) {
 	return
 }
 
-func (rh *RoleHandler) Register(g *gin.Engine) {
-	g.POST("/logIn", func(ctx *gin.Context) { rh.LogIn(ctx) })
-	g.POST("/signIn", func(ctx *gin.Context) { rh.SignIn(ctx) })
+func (rh *RoleHandler) GetName() string {
+	return "external"
+}
+
+// ReadRegister 实现deployment controller 路由 框架规范
+func (rh *RoleHandler) ReadRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
+	r := g.Use(middle...)
+	{
+		r.POST("/logIn", func(ctx *gin.Context) { rh.LogIn(ctx) })
+		r.POST("/signIn", func(ctx *gin.Context) { rh.SignIn(ctx) })
+	}
 }

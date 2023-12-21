@@ -211,7 +211,7 @@ func (dc *DeploymentController) GetName() string {
 }
 
 // ReadRegister 实现deployment controller 路由 框架规范
-func (dc *DeploymentController) ReadRegister(g *gin.RouterGroup, middle ...gin.HandlerFunc) {
+func (dc *DeploymentController) ReadRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
 	rd := g.Use(middle...)
 	{
 		rd.GET("list", func(ctx *gin.Context) { dc.list(ctx) })
@@ -221,7 +221,7 @@ func (dc *DeploymentController) ReadRegister(g *gin.RouterGroup, middle ...gin.H
 }
 
 // WriteRegister 实现deployment controller 路由 框架规范
-func (dc *DeploymentController) WriteRegister(g *gin.RouterGroup, middle ...gin.HandlerFunc) {
+func (dc *DeploymentController) WriteRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
 	wd := g.Use(middle...)
 	{
 		wd.POST("delete/:ns/:name", func(ctx *gin.Context) { dc.delete(ctx) })

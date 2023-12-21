@@ -100,12 +100,26 @@ func (sc *ServiceController) update(ctx *gin.Context) {
 	return
 }
 
-func (sc *ServiceController) Register(g *gin.Engine) {
-	services := g.Group("v1/services").Use(sc.middlewares...)
+// GetName 实现deployment controller 路由 框架规范
+func (sc *ServiceController) GetName() string {
+	return "service"
+}
+
+// ReadRegister 实现deployment controller 路由 框架规范
+func (sc *ServiceController) ReadRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
+	services := g.Use(middle...)
 	{
 		services.GET("", func(ctx *gin.Context) { sc.ListAll(ctx) })
 		services.GET("/:ns/:name", func(ctx *gin.Context) { sc.Get(ctx) })
 		services.GET("yaml/:ns/:name", func(ctx *gin.Context) { sc.downYaml(ctx) })
+	}
+}
+
+// WriteRegister 实现deployment controller 路由 框架规范
+func (sc *ServiceController) WriteRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
+	services := g.Use(middle...)
+	{
+
 		services.POST("apply/:ns", func(ctx *gin.Context) { sc.applyByYaml(ctx) })
 		services.POST("upgrade/:ns", func(ctx *gin.Context) { sc.update(ctx) })
 	}

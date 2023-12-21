@@ -89,9 +89,14 @@ func (pc *PodController) List(ctx *gin.Context) {
 func (pc *PodController) Delete(ctx *gin.Context) {
 }
 
-// Register pod controller 路由 框架规范
-func (pc *PodController) Register(g *gin.Engine) {
-	pods := g.Group("v1/pods").Use(pc.middlewares...)
+// GetName 实现deployment controller 路由 框架规范
+func (pc *PodController) GetName() string {
+	return "pod"
+}
+
+// ReadRegister 实现deployment controller 路由 框架规范
+func (pc *PodController) ReadRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
+	pods := g.Use(middle...)
 	{
 		pods.GET("list", func(ctx *gin.Context) { pc.List(ctx) })
 		pods.GET("getDetail/:ns/:name", func(ctx *gin.Context) { pc.GetFromApiServer(ctx) })
@@ -99,4 +104,9 @@ func (pc *PodController) Register(g *gin.Engine) {
 
 		pods.GET("yaml/:ns/:name", func(ctx *gin.Context) { pc.downYaml(ctx) })
 	}
+}
+
+// WriteRegister 实现deployment controller 路由 框架规范
+func (pc *PodController) WriteRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
+
 }

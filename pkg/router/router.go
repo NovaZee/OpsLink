@@ -18,7 +18,9 @@ type Router struct {
 	Router *gin.Engine
 	cb     *casbin.Casbin
 
-	handler []Handler
+	PublicHandler  []FrontHandler
+	FrontHandler   []FrontHandler
+	ManagerHandler []ManagementHandler
 }
 
 func InitRouter(opslinkServer *service.OpsLinkServer) (*Router, error) {
@@ -33,54 +35,62 @@ func InitRouter(opslinkServer *service.OpsLinkServer) (*Router, error) {
 		return nil, err
 	}
 	router.InitHandler(opslinkServer)
-	registerHandlers(router, router.handler...)
+	registerPublic(router, router.FrontHandler...)
+	registerFront(router, router.FrontHandler...)
+	registerManager(router, router.ManagerHandler...)
 	engine.Run(":" + opslinkServer.Config.Server.HttpPort).Error()
 	return router, nil
 }
 
 func (r *Router) InitHandler(opslinkServer *service.OpsLinkServer) {
-	handlers := []Handler{
-		//BuildPolicy(opslinkServer.Casbin, ManagerMiddleware()),
-		//BuildRole(opslinkServer.Casbin, opslinkServer.StoreService, ManagerMiddleware()),
-		////todo:kube资源过多时，由于使用的路由中间件一致，可以继续抽离模块，尽量避免在路由模块操作
-		//kubehandler.BuildRole(opslinkServer.K8sClient.RBACHandler, JWT(opslinkServer.Casbin)),
-		//kubehandler.BuildNode(opslinkServer.K8sClient.NodeHandler, JWT(opslinkServer.Casbin)),
-		kubehandler.BuildDeployments(opslinkServer.K8sClient.DepHandler),
-		//kubehandler.BuildPod(opslinkServer.K8sClient.PodHandler, JWT(opslinkServer.Casbin)),
-		//kubehandler.BuildConfigMap(opslinkServer.K8sClient.ConfigMapHandler, JWT(opslinkServer.Casbin)),
-		//kubehandler.BuildService(opslinkServer.K8sClient.ServiceHandler, JWT(opslinkServer.Casbin)),
-		//kubehandler.BuildNamespace(opslinkServer.K8sClient.NamespaceHandler, JWT(opslinkServer.Casbin)),
+	handler := opslinkServer.K8sClient.K8sHandler
+	front := []FrontHandler{
+		BuildRole(opslinkServer.Casbin, opslinkServer.StoreService),
 	}
-	r.handler = handlers
+	in := []ManagementHandler{
+		//todo:考虑更加优雅的做法
+		kubehandler.BuildRole(handler.RBACHandler),
+		kubehandler.BuildNode(handler.NodeHandler),
+		kubehandler.BuildDeployments(handler.DepHandler),
+		kubehandler.BuildPod(handler.PodHandler),
+		kubehandler.BuildConfigMap(handler.ConfigMapHandler),
+		kubehandler.BuildService(handler.ServiceHandler),
+		kubehandler.BuildNamespace(handler.NamespaceHandler),
+		BuildPolicy(opslinkServer.Casbin),
+	}
+	r.FrontHandler = front
+	r.ManagerHandler = in
 }
 
 // registerHandlers 将多个处理程序注册到 Gin 路由器上
-func registerHandlers(router *Router, handlers ...Handler) {
+func registerFront(router *Router, handlers ...FrontHandler) {
 	for _, h := range handlers {
-		rGroup := router.Router.Group("/v1/r/" + h.GetName())
-		h.ReadRegister(rGroup)
+		h.ReadRegister(router.Router.Group("v1/f"))
+	}
+}
+
+// registerHandlers 将多个处理程序注册到 Gin 路由器上
+func registerPublic(router *Router, handlers ...FrontHandler) {
+	for _, h := range handlers {
+		h.ReadRegister(router.Router.Group("/v1/p"))
+	}
+}
+
+// registerHandlers 将多个处理程序注册到 Gin 路由器上
+func registerManager(router *Router, handlers ...ManagementHandler) {
+	for _, h := range handlers {
+		use := router.Router.Group("/v1/r/" + h.GetName()).Use(router.ExtractParams()).Use(router.JWT())
+		h.ReadRegister(use)
 	}
 
 	for _, h := range handlers {
-		wGroup := router.Router.Group("/v1/w/" + h.GetName())
-		h.WriteRegister(wGroup)
+		h.WriteRegister(router.Router.Group("/v1/w/" + h.GetName()).Use(router.ExtractParams()).Use(router.JWT()))
 	}
 }
+
 func NewRouter(g *gin.Engine, cb *casbin.Casbin) (*Router, error) {
 	return &Router{
 		Router: g,
 		cb:     cb,
 	}, nil
 }
-
-//// InitAccessingRouting 用户访问路由
-//func (r *Router) InitAccessingRouting() {
-//	// 访问请求通过jwt校验->casbin校验
-//	admin := r.Router.Group("/v1")
-//	{
-//		admin.POST("index", func(ctx *gin.Context) {
-//		})
-//
-//	}
-//	admin.Use(JWT(r.cb))
-//}

@@ -45,12 +45,24 @@ func (nss *NamespaceController) Remove(ctx *gin.Context) {
 	return
 }
 
-// Register NamespaceController 路由 框架规范
-func (nss *NamespaceController) Register(g *gin.Engine) {
+// GetName 实现deployment controller 路由 框架规范
+func (nss *NamespaceController) GetName() string {
+	return "namespace"
+}
 
-	ns := g.Group("v1/namespace").Use(nss.middlewares...)
+// ReadRegister 实现deployment controller 路由 框架规范
+func (nss *NamespaceController) ReadRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
+	ns := g.Use(middle...)
 	{
 		ns.GET("list", func(ctx *gin.Context) { nss.List(ctx) })
+	}
+}
+
+// WriteRegister 实现deployment controller 路由 框架规范
+func (nss *NamespaceController) WriteRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
+	ns := g.Use(middle...)
+	{
+
 		ns.PUT("add/:name", func(ctx *gin.Context) { nss.Add(ctx) })
 		ns.PUT("remove/:name", func(ctx *gin.Context) { nss.Remove(ctx) })
 	}

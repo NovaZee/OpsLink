@@ -87,12 +87,24 @@ func (cmc *ConfigMapController) applyByYaml(ctx *gin.Context) {
 	return
 }
 
-// Register pod controller 路由 框架规范
-func (cmc *ConfigMapController) Register(g *gin.Engine) {
-	cm := g.Group("v1/configmaps").Use(cmc.middlewares...)
+// GetName 实现deployment controller 路由 框架规范
+func (cmc *ConfigMapController) GetName() string {
+	return "configmap"
+}
+
+// ReadRegister 实现deployment controller 路由 框架规范
+func (cmc *ConfigMapController) ReadRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
+	cm := g.Use(middle...)
 	{
 		cm.GET("", func(ctx *gin.Context) { cmc.ListAll(ctx) })
 		cm.GET("/:ns/:name", func(ctx *gin.Context) { cmc.Get(ctx) })
+	}
+}
+
+// WriteRegister 实现deployment controller 路由 框架规范
+func (cmc *ConfigMapController) WriteRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
+	cm := g.Use(middle...)
+	{
 		cm.POST("", func(ctx *gin.Context) { cmc.Apply(ctx) })
 		cm.DELETE("", func(ctx *gin.Context) { cmc.delete(ctx) })
 

@@ -156,14 +156,18 @@ type Policy interface {
 
 func (c *Casbin) Add(a any) bool {
 	if casbinModel, ok := a.(*CasbinModel); ok {
-		result := c.Enforcer.AddPolicy(casbinModel.Role, casbinModel.Source, casbinModel.Behavior)
-		if result {
-			err := c.Enforcer.SavePolicy()
-			if err != nil {
-				return false
+		addExist := c.Enforcer.HasPolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
+		if !addExist {
+			result := c.Enforcer.AddPolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
+			if result {
+				err := c.Enforcer.SavePolicy()
+				if err != nil {
+					return false
+				}
 			}
+			return true
 		}
-		return result
+		return false
 	}
 	return false
 }

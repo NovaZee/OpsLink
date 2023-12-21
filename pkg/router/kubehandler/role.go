@@ -29,10 +29,20 @@ func (rc *RoleController) ListSaTarget(ctx *gin.Context) {
 	return
 }
 
-func (rc *RoleController) Register(g *gin.Engine) {
-	rbac := g.Group("v1/roles").Use(rc.middlewares...)
+// GetName 实现deployment controller 路由 框架规范
+func (rc *RoleController) GetName() string {
+	return "role"
+}
+
+// ReadRegister 实现deployment controller 路由 框架规范
+func (rc *RoleController) ReadRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
+	rbac := g.Use(middle...)
 	{
 		rbac.GET("", func(ctx *gin.Context) { rc.ListTarget(ctx) })
 		rbac.GET("/sa", func(ctx *gin.Context) { rc.ListSaTarget(ctx) })
 	}
+}
+
+// WriteRegister 实现deployment controller 路由 框架规范
+func (rc *RoleController) WriteRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
 }

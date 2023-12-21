@@ -55,11 +55,23 @@ func (nc *NodeController) Modify(ctx *gin.Context) {
 	return
 }
 
-// Register pod controller 路由 框架规范
-func (nc *NodeController) Register(g *gin.Engine) {
-	pods := g.Group("v1/nodes").Use(nc.middlewares...)
+// GetName 实现deployment controller 路由 框架规范
+func (nc *NodeController) GetName() string {
+	return "node"
+}
+
+// ReadRegister 实现deployment controller 路由 框架规范
+func (nc *NodeController) ReadRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
+	pods := g.Use(middle...)
 	{
 		pods.GET("list", func(ctx *gin.Context) { nc.List(ctx) })
+	}
+}
+
+// WriteRegister 实现deployment controller 路由 框架规范
+func (nc *NodeController) WriteRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
+	pods := g.Use(middle...)
+	{
 		pods.POST("modify", func(ctx *gin.Context) { nc.Modify(ctx) })
 	}
 }

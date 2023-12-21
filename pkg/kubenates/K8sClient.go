@@ -16,7 +16,10 @@ type K8sClient struct {
 	Clientset        kubernetes.Interface
 	MetricsClientSet *versioned.Clientset
 	RestConfig       *rest.Config
+	K8sHandler       *K8sHandler
+}
 
+type K8sHandler struct {
 	NodeHandler      *kubeservice.NodeService
 	DepHandler       *kubeservice.DeploymentService
 	PodHandler       *kubeservice.PodService
@@ -31,7 +34,7 @@ func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
 	var err error
 	var clientSet kubernetes.Interface
 	var metricClient *versioned.Clientset
-	k8sClient := &K8sClient{}
+	k8sClient := &K8sClient{K8sHandler: &K8sHandler{}}
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -80,16 +83,16 @@ func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
 
 // initHandlers 用于初始化 DepHandler 和 PodHandler
 func (k *K8sClient) initHandlers() {
-	k.EventHandler = kubeservice.NewEventService(k.Clientset)
-	k.ConfigMapHandler = kubeservice.NewConfigMapService(k.Clientset)
-	k.RBACHandler = kubeservice.NewRBACService(k.Clientset)
+	k.K8sHandler.EventHandler = kubeservice.NewEventService(k.Clientset)
+	k.K8sHandler.ConfigMapHandler = kubeservice.NewConfigMapService(k.Clientset)
+	k.K8sHandler.RBACHandler = kubeservice.NewRBACService(k.Clientset)
 
-	k.DepHandler = kubeservice.NewDeploymentService(k.Clientset, k.EventHandler)
-	k.PodHandler = kubeservice.NewPodService(k.Clientset, k.EventHandler)
-	k.NamespaceHandler = kubeservice.NewNamespaceService(k.Clientset)
-	k.ServiceHandler = kubeservice.NewServiceService(k.Clientset)
+	k.K8sHandler.DepHandler = kubeservice.NewDeploymentService(k.Clientset, k.K8sHandler.EventHandler)
+	k.K8sHandler.PodHandler = kubeservice.NewPodService(k.Clientset, k.K8sHandler.EventHandler)
+	k.K8sHandler.NamespaceHandler = kubeservice.NewNamespaceService(k.Clientset)
+	k.K8sHandler.ServiceHandler = kubeservice.NewServiceService(k.Clientset)
 
-	k.NodeHandler = kubeservice.NewNodeService(k.Clientset, k.MetricsClientSet, k.PodHandler.Pi)
+	k.K8sHandler.NodeHandler = kubeservice.NewNodeService(k.Clientset, k.MetricsClientSet, k.K8sHandler.PodHandler.Pi)
 
 }
 
@@ -124,27 +127,27 @@ func (k *K8sClient) InitInformer() informers.SharedInformerFactory {
 	sif := informers.NewSharedInformerFactory(k.Clientset, 0)
 
 	deploymentInformer := sif.Apps().V1().Deployments()
-	deploymentInformer.Informer().AddEventHandler(k.DepHandler.Di)
+	deploymentInformer.Informer().AddEventHandler(k.K8sHandler.DepHandler.Di)
 
 	node := sif.Core().V1().Nodes()
-	node.Informer().AddEventHandler(k.NodeHandler.Ni)
+	node.Informer().AddEventHandler(k.K8sHandler.NodeHandler.Ni)
 
 	pods := sif.Core().V1().Pods()
-	pods.Informer().AddEventHandler(k.PodHandler.Pi)
+	pods.Informer().AddEventHandler(k.K8sHandler.PodHandler.Pi)
 
 	event := sif.Core().V1().Events()
-	event.Informer().AddEventHandler(k.EventHandler.Ei)
+	event.Informer().AddEventHandler(k.K8sHandler.EventHandler.Ei)
 
 	ns := sif.Core().V1().Namespaces()
-	ns.Informer().AddEventHandler(k.NamespaceHandler.Nsi)
+	ns.Informer().AddEventHandler(k.K8sHandler.NamespaceHandler.Nsi)
 
-	sif.Core().V1().ConfigMaps().Informer().AddEventHandler(k.ConfigMapHandler.Cmi)
+	sif.Core().V1().ConfigMaps().Informer().AddEventHandler(k.K8sHandler.ConfigMapHandler.Cmi)
 
-	sif.Core().V1().Services().Informer().AddEventHandler(k.ServiceHandler.Si)
+	sif.Core().V1().Services().Informer().AddEventHandler(k.K8sHandler.ServiceHandler.Si)
 
-	sif.Rbac().V1().Roles().Informer().AddEventHandler(k.RBACHandler.Ri)
+	sif.Rbac().V1().Roles().Informer().AddEventHandler(k.K8sHandler.RBACHandler.Ri)
 
-	sif.Core().V1().ServiceAccounts().Informer().AddEventHandler(k.RBACHandler.Sai)
+	sif.Core().V1().ServiceAccounts().Informer().AddEventHandler(k.K8sHandler.RBACHandler.Sai)
 
 	sif.Start(wait.NeverStop)
 

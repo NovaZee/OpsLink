@@ -63,8 +63,18 @@ func (ph *PolicyHandler) UpdatePolicy(ctx *gin.Context, c *casbin.Casbin) {
 	return
 }
 
-func (ph *PolicyHandler) Register(g *gin.Engine) {
-	admin := g.Group("/manager").Use(ph.middlewares...)
+func (ph *PolicyHandler) GetName() string {
+	return "policy"
+}
+
+// ReadRegister 实现deployment controller 路由 框架规范
+func (ph *PolicyHandler) ReadRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
+
+}
+
+// WriteRegister 实现deployment controller 路由 框架规范
+func (ph *PolicyHandler) WriteRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
+	admin := g.Use(middle...)
 	{
 		admin.POST("addPolicy", func(ctx *gin.Context) { ph.AddPolicy(ctx, ph.cb) })
 		admin.GET("deletePolicy", func(ctx *gin.Context) { ph.DeletePolicy(ctx, ph.cb) })
