@@ -1,7 +1,7 @@
 package kubeservice
 
 import (
-	"github.com/denovo/permission/pkg/kubenates/informer"
+	"github.com/denovo/permission/pkg/service/kubenates/informer"
 	"k8s.io/client-go/kubernetes"
 )
 

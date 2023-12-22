@@ -44,6 +44,10 @@ func NewLocalStore() (*LocalStore, error) {
 	return localStore, nil
 }
 
+func (ls *LocalStore) GetRole() *model.RolesSlice {
+	return ls.LocalRoles
+}
+
 func (ls *LocalStore) Stop() {
 	ls.lock.Lock()
 	defer ls.lock.Unlock()

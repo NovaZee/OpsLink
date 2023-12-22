@@ -2,8 +2,8 @@ package router
 
 import (
 	"context"
-	"github.com/denovo/permission/pkg/casbin"
-	"github.com/denovo/permission/pkg/store"
+	"github.com/denovo/permission/pkg/service/casbin"
+	"github.com/denovo/permission/pkg/service/store"
 	"github.com/denovo/permission/pkg/util"
 	"github.com/denovo/permission/protoc/model"
 	"github.com/gin-gonic/gin"
@@ -12,19 +12,19 @@ import (
 	"time"
 )
 
-type RoleHandler struct {
+type PublicHandler struct {
 	casbin *casbin.Casbin
 	ss     store.StoreService
 
 	middlewares []gin.HandlerFunc
 }
 
-func BuildRole(cb *casbin.Casbin, storeService store.StoreService, middleware ...gin.HandlerFunc) *RoleHandler {
-	return &RoleHandler{casbin: cb, ss: storeService, middlewares: middleware}
+func BuildPublic(cb *casbin.Casbin, storeService store.StoreService, middleware ...gin.HandlerFunc) *PublicHandler {
+	return &PublicHandler{casbin: cb, ss: storeService, middlewares: middleware}
 }
 
 // LogIn 登录
-func (rh *RoleHandler) LogIn(ctx *gin.Context) {
+func (rh *PublicHandler) LogIn(ctx *gin.Context) {
 	var font model.Role
 	var ctx2 context.Context
 	if err := ctx.ShouldBind(&font); err != nil {
@@ -55,7 +55,7 @@ func (rh *RoleHandler) LogIn(ctx *gin.Context) {
 }
 
 // SignIn 注册
-func (rh *RoleHandler) SignIn(ctx *gin.Context) {
+func (rh *PublicHandler) SignIn(ctx *gin.Context) {
 	var font model.Role
 	var ctx2 context.Context
 	if err := ctx.ShouldBind(&font); err != nil {
@@ -95,12 +95,12 @@ func (rh *RoleHandler) SignIn(ctx *gin.Context) {
 	return
 }
 
-func (rh *RoleHandler) GetName() string {
-	return "external"
+func (rh *PublicHandler) GetName() string {
+	return "public"
 }
 
 // ReadRegister 实现deployment controller 路由 框架规范
-func (rh *RoleHandler) ReadRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
+func (rh *PublicHandler) ReadRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
 	r := g.Use(middle...)
 	{
 		r.POST("/logIn", func(ctx *gin.Context) { rh.LogIn(ctx) })

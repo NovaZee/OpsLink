@@ -14,9 +14,10 @@ var (
 
 // domain 域
 const (
-	KubeSystem = "kube-system"
-	Default    = "default"
-	All        = "*"
+	KubeSystem   = "kube-system"
+	PolicyModule = "policy"
+	Default      = "default"
+	All          = "*"
 )
 
 // 角色身份
@@ -24,10 +25,11 @@ const (
 // user 用户   read
 // super_admin 超级管理员
 const (
-	Admin      = "admin"
-	User       = "user"
-	SuperAdmin = "superAdmin"
-	InitAdmin  = "initAdmin"
+	Admin       = "admin"
+	User        = "user"
+	SuperAdmin  = "superAdmin"
+	InitAdmin   = "initAdmin"
+	PolicyAdmin = "policyAdmin"
 )
 
 // 内置用户
@@ -66,7 +68,7 @@ type CasbinAdapter struct {
 type CasbinModel struct {
 	PType    string `json:"p_type" form:"p_type" description:"策略"`
 	Role     string `json:"role" form:"v0" description:"角色/用户"`
-	Domain   string `json:"domain" form:"v1" description:"域"`
+	Domain   string `json:"domain" form:"v1" description:"域/角色"`
 	Source   string `json:"source" form:"v2" description:"资源"`
 	Behavior string `json:"behavior" form:"v3" description:"行为"`
 }
@@ -100,11 +102,20 @@ func (c *Casbin) InitPermission() {
 		c.Enforcer.AddGroupingPolicy(AdminRoot, SuperAdmin)
 		logger.Infow("InitPermission", AdminRoot, "admin role init success!")
 	}
-
+	//g, opslink, policyAdmin
+	policy := c.Enforcer.HasGroupingPolicy(OpsLink, PolicyAdmin)
+	if !policy {
+		c.Enforcer.AddGroupingPolicy(OpsLink, PolicyAdmin)
+	}
 	//g, opslink, initAdmin
 	opsKube := c.Enforcer.HasGroupingPolicy(OpsLink, InitAdmin)
 	if !opsKube {
 		c.Enforcer.AddGroupingPolicy(OpsLink, InitAdmin)
+	}
+	//p, policyAdmin, policy, *, write
+	policyModule := c.Enforcer.HasPolicy(PolicyAdmin, PolicyModule, All, Write)
+	if !policyModule {
+		c.Enforcer.AddPolicy(PolicyAdmin, PolicyModule, All, Write)
 	}
 	//p, superAdmin, *, *, write
 	superAdmin := c.Enforcer.HasPolicy(SuperAdmin, All, All, Write)
@@ -128,8 +139,9 @@ func (c *Casbin) InitPermission() {
 	}
 
 }
-func NewCasbinModel(s1, s2, s3, s4 string) *CasbinModel {
+func NewCasbinModel(s0, s1, s2, s3, s4 string) *CasbinModel {
 	return &CasbinModel{
+		PType:    s0,
 		Role:     s1,
 		Domain:   s2,
 		Source:   s3,
@@ -156,16 +168,33 @@ type Policy interface {
 
 func (c *Casbin) Add(a any) bool {
 	if casbinModel, ok := a.(*CasbinModel); ok {
-		addExist := c.Enforcer.HasPolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
-		if !addExist {
-			result := c.Enforcer.AddPolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
-			if result {
-				err := c.Enforcer.SavePolicy()
-				if err != nil {
-					return false
+		//ABAC
+		if casbinModel.PType == "p" {
+			addExist := c.Enforcer.HasPolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
+			if !addExist {
+				result := c.Enforcer.AddPolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
+				if result {
+					err := c.Enforcer.SavePolicy()
+					if err != nil {
+						return false
+					}
 				}
+				return true
 			}
-			return true
+		}
+		//role
+		if casbinModel.PType == "g" {
+			addExist := c.Enforcer.HasGroupingPolicy(casbinModel.Role, casbinModel.Domain)
+			if !addExist {
+				result := c.Enforcer.AddGroupingPolicy(casbinModel.Role, casbinModel.Domain)
+				if result {
+					err := c.Enforcer.SavePolicy()
+					if err != nil {
+						return false
+					}
+				}
+				return true
+			}
 		}
 		return false
 	}
@@ -180,22 +209,49 @@ func (c *Casbin) AddGroupingPolicy(role string, group string) bool {
 	return false
 }
 func (c *Casbin) Update(a any) bool {
-	if _, ok := a.([]*CasbinModel); ok {
-		// 遍历集合中的每个 CasbinModel 并添加策略
-		return true
+	if casbinModel, ok := a.(*CasbinModel); ok {
+		//todo:判断当前身份是否已存在，若从只读更新为可写，新增write，删除只读。因为可写包括只读，冗余了。
+		if casbinModel.PType == "p" {
+			//过滤下标从0,从属性开始，
+			policy := c.Enforcer.GetFilteredNamedPolicy("p", 0, casbinModel.Role)
+			for _, strings := range policy {
+				println(strings)
+			}
+		}
+		if casbinModel.PType == "g" {
+			policy := c.Enforcer.GetFilteredGroupingPolicy(0, casbinModel.Role)
+			for _, strings := range policy {
+				println(strings)
+			}
+		}
 	}
 	return false
 }
 func (c *Casbin) Delete(a any) bool {
 	if casbinModel, ok := a.(*CasbinModel); ok {
-		result := c.Enforcer.RemovePolicy(casbinModel.Role, casbinModel.Source, casbinModel.Behavior)
-		if result {
-			err := c.Enforcer.SavePolicy()
-			if err != nil {
-				return false
+		//ABAC
+		if casbinModel.PType == "p" {
+			result := c.Enforcer.RemovePolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
+			if result {
+				err := c.Enforcer.SavePolicy()
+				if err != nil {
+					return false
+				}
+			}
+			return result
+		}
+		//role
+		if casbinModel.PType == "g" {
+			result := c.Enforcer.RemoveGroupingPolicy(casbinModel.Role, casbinModel.Domain)
+			if result {
+				err := c.Enforcer.SavePolicy()
+				if err != nil {
+					return false
+				}
+				return true
 			}
 		}
-		return result
+		return false
 	}
 	return false
 }

@@ -24,6 +24,11 @@ func (r *V3Store) Start() {
 	panic("implement me")
 }
 
+func (r *V3Store) GetRole() *model.RolesSlice {
+	// todo : 补充etcd的获取成员
+	return nil
+}
+
 func (r *V3Store) Create(ctx context.Context, v *model.Role) error {
 	key := ConvertKey(v)
 	result, err := json.Marshal(v)

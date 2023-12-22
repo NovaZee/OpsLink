@@ -42,6 +42,7 @@ func (r *Router) JWT() gin.HandlerFunc {
 				"error":  ErrorAuthCheckTokenFail,
 				"status": http.StatusForbidden,
 			})
+			return
 		}
 		claims, err := util.ParseToken(token)
 		if err != nil {
@@ -49,11 +50,13 @@ func (r *Router) JWT() gin.HandlerFunc {
 				"error":  ErrorAuthCheckTokenFail,
 				"status": http.StatusForbidden,
 			})
+			return
 		} else if time.Now().Unix() > claims.ExpiresAt {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error":  ErrorAuthCheckTokenExpired,
 				"status": http.StatusBadRequest,
 			})
+			return
 		}
 		//TODO:
 		//获取请求的资源
@@ -61,13 +64,13 @@ func (r *Router) JWT() gin.HandlerFunc {
 		resource, _ := c.Get("resource")
 		action, _ := c.Get("action")
 		_, _ = c.Get("version")
-		println(claims.UserName, domain.(string), resource.(string), action.(string))
 		enforce := r.cb.Enforcer.Enforce(claims.UserName, domain.(string), resource.(string), action.(string))
 		if !enforce {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error":  ErrorAuthCheckTokenFail,
 				"status": http.StatusForbidden,
 			})
+			return
 		}
 		c.Next()
 	}

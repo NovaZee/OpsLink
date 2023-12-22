@@ -1,9 +1,9 @@
 package router
 
 import (
-	"github.com/denovo/permission/pkg/casbin"
 	"github.com/denovo/permission/pkg/router/kubehandler"
 	"github.com/denovo/permission/pkg/service"
+	"github.com/denovo/permission/pkg/service/casbin"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 )
@@ -18,9 +18,8 @@ type Router struct {
 	Router *gin.Engine
 	cb     *casbin.Casbin
 
-	PublicHandler  []FrontHandler
-	FrontHandler   []FrontHandler
-	ManagerHandler []ManagementHandler
+	FrontHandler   []Front
+	ManagerHandler []Management
 }
 
 func InitRouter(opslinkServer *service.OpsLinkServer) (*Router, error) {
@@ -30,12 +29,11 @@ func InitRouter(opslinkServer *service.OpsLinkServer) (*Router, error) {
 	engine.Use(Logger())
 	engine.GET("/validate")
 
-	router, err := NewRouter(engine, opslinkServer.Casbin)
+	router, err := NewRouter(engine, opslinkServer)
 	if err != nil {
 		return nil, err
 	}
 	router.InitHandler(opslinkServer)
-	registerPublic(router, router.FrontHandler...)
 	registerFront(router, router.FrontHandler...)
 	registerManager(router, router.ManagerHandler...)
 	engine.Run(":" + opslinkServer.Config.Server.HttpPort).Error()
@@ -44,10 +42,10 @@ func InitRouter(opslinkServer *service.OpsLinkServer) (*Router, error) {
 
 func (r *Router) InitHandler(opslinkServer *service.OpsLinkServer) {
 	handler := opslinkServer.K8sClient.K8sHandler
-	front := []FrontHandler{
-		BuildRole(opslinkServer.Casbin, opslinkServer.StoreService),
+	front := []Front{
+		BuildPublic(opslinkServer.Casbin, opslinkServer.StoreService),
 	}
-	in := []ManagementHandler{
+	in := []Management{
 		//todo:考虑更加优雅的做法
 		kubehandler.BuildRole(handler.RBACHandler),
 		kubehandler.BuildNode(handler.NodeHandler),
@@ -56,41 +54,30 @@ func (r *Router) InitHandler(opslinkServer *service.OpsLinkServer) {
 		kubehandler.BuildConfigMap(handler.ConfigMapHandler),
 		kubehandler.BuildService(handler.ServiceHandler),
 		kubehandler.BuildNamespace(handler.NamespaceHandler),
-		BuildPolicy(opslinkServer.Casbin),
+		BuildRolePolicy(opslinkServer.Casbin, opslinkServer.StoreService),
 	}
 	r.FrontHandler = front
 	r.ManagerHandler = in
 }
 
-// registerHandlers 将多个处理程序注册到 Gin 路由器上
-func registerFront(router *Router, handlers ...FrontHandler) {
+// registerFront 注册前台路由（查看）
+func registerFront(router *Router, handlers ...Front) {
 	for _, h := range handlers {
 		h.ReadRegister(router.Router.Group("v1/f"))
 	}
 }
 
-// registerHandlers 将多个处理程序注册到 Gin 路由器上
-func registerPublic(router *Router, handlers ...FrontHandler) {
+// registerManager 注册管理路由
+func registerManager(router *Router, handlers ...Management) {
 	for _, h := range handlers {
-		h.ReadRegister(router.Router.Group("/v1/p"))
-	}
-}
-
-// registerHandlers 将多个处理程序注册到 Gin 路由器上
-func registerManager(router *Router, handlers ...ManagementHandler) {
-	for _, h := range handlers {
-		use := router.Router.Group("/v1/r/" + h.GetName()).Use(router.ExtractParams()).Use(router.JWT())
-		h.ReadRegister(use)
-	}
-
-	for _, h := range handlers {
+		h.ReadRegister(router.Router.Group("/v1/r/" + h.GetName()).Use(router.ExtractParams()).Use(router.JWT()))
 		h.WriteRegister(router.Router.Group("/v1/w/" + h.GetName()).Use(router.ExtractParams()).Use(router.JWT()))
 	}
 }
 
-func NewRouter(g *gin.Engine, cb *casbin.Casbin) (*Router, error) {
+func NewRouter(g *gin.Engine, ops *service.OpsLinkServer) (*Router, error) {
 	return &Router{
 		Router: g,
-		cb:     cb,
+		cb:     ops.Casbin,
 	}, nil
 }

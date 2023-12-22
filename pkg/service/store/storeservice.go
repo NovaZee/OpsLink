@@ -14,6 +14,7 @@ type StoreService interface {
 	Delete(ctx context.Context, v any) (int64, error)
 	Get(ctx context.Context, k string) (*model.Role, error)
 	List(ctx context.Context, k string) ([]*model.Role, error)
+	GetRole() *model.RolesSlice
 	protoc.Signal
 }
 

@@ -5,10 +5,10 @@ package service
 
 import (
 	config "github.com/denovo/permission/config"
-	"github.com/denovo/permission/pkg/casbin"
-	"github.com/denovo/permission/pkg/kubenates"
+	"github.com/denovo/permission/pkg/service/casbin"
+	"github.com/denovo/permission/pkg/service/kubenates"
+	"github.com/denovo/permission/pkg/service/store"
 	"github.com/denovo/permission/pkg/signal"
-	"github.com/denovo/permission/pkg/store"
 	"github.com/google/wire"
 )
 

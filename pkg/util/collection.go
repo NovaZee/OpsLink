@@ -23,3 +23,18 @@ func StructToStringSlice(entity interface{}) []string {
 	}
 	return values
 }
+
+func PageSlice(collectionLength, pageNo, pageSize int) (int, int) {
+	startIndex := (pageNo - 1) * pageSize
+	endIndex := pageNo * pageSize
+
+	if startIndex >= collectionLength {
+		return -1, -1
+	}
+
+	if endIndex > collectionLength {
+		endIndex = collectionLength
+	}
+
+	return startIndex, endIndex
+}

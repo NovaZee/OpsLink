@@ -2,7 +2,7 @@ package kubeservice
 
 import (
 	"context"
-	"github.com/denovo/permission/pkg/kubenates/informer"
+	"github.com/denovo/permission/pkg/service/kubenates/informer"
 	"github.com/denovo/permission/protoc/kube"
 	"github.com/oppslink/protocol/logger"
 	v3yaml "gopkg.in/yaml.v3"

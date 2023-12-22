@@ -1,7 +1,7 @@
 package kubehandler
 
 import (
-	"github.com/denovo/permission/pkg/kubenates/kubeservice"
+	"github.com/denovo/permission/pkg/service/kubenates/kubeservice"
 	"github.com/denovo/permission/protoc/kube"
 	"github.com/gin-gonic/gin"
 	"io"

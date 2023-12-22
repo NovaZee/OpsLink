@@ -2,12 +2,12 @@ package router
 
 import "github.com/gin-gonic/gin"
 
-type ManagementHandler interface {
-	FrontHandler
+type Management interface {
+	Front
 	WriteRegister(g gin.IRoutes, middle ...gin.HandlerFunc)
 }
 
-type FrontHandler interface {
+type Front interface {
 	ReadRegister(g gin.IRoutes, middle ...gin.HandlerFunc)
 	GetName() string
 }

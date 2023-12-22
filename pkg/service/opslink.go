@@ -2,10 +2,10 @@ package service
 
 import (
 	config "github.com/denovo/permission/config"
-	"github.com/denovo/permission/pkg/casbin"
-	opskube "github.com/denovo/permission/pkg/kubenates"
+	"github.com/denovo/permission/pkg/service/casbin"
+	opskube "github.com/denovo/permission/pkg/service/kubenates"
+	opsstore "github.com/denovo/permission/pkg/service/store"
 	"github.com/denovo/permission/pkg/signal"
-	opsstore "github.com/denovo/permission/pkg/store"
 	"github.com/gorilla/mux"
 	"net/http"
 )

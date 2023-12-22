@@ -2,7 +2,7 @@ package kubenates
 
 import (
 	"github.com/denovo/permission/config"
-	"github.com/denovo/permission/pkg/kubenates/kubeservice"
+	"github.com/denovo/permission/pkg/service/kubenates/kubeservice"
 	"github.com/oppslink/protocol/logger"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/informers"
