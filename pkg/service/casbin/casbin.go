@@ -1,7 +1,6 @@
 package casbin
 
 import (
-	"errors"
 	"github.com/casbin/casbin/v2"
 	config "github.com/denovo/permission/config"
 	"github.com/oppslink/protocol/logger"
@@ -50,10 +49,6 @@ const (
 	Write = "write"
 )
 
-type Casbin struct {
-	Enforcer *casbin.Enforcer
-}
-
 func NewCasbin(Enforcer *casbin.Enforcer) *Casbin {
 	return &Casbin{
 		Enforcer: Enforcer,
@@ -64,20 +59,6 @@ type CasbinAdapter struct {
 	etcdEndpoint []string
 	key          string
 	modelConf    string
-}
-
-type CasbinModel struct {
-	PType    string `json:"p_type" form:"p_type" description:"策略"`
-	Role     string `json:"role" form:"v0" description:"角色/用户"`
-	Domain   string `json:"domain" form:"v1" description:"域/角色"`
-	Source   string `json:"source" form:"v2" description:"资源"`
-	Behavior string `json:"behavior" form:"v3" description:"行为"`
-}
-
-// UpdateRequest 是请求的结构体，包含了旧实体和新实体的信息
-type UpdateRequest struct {
-	OldData *CasbinModel `json:"old_policy"`
-	NewData *CasbinModel `json:"new_policy"`
 }
 
 func InitCasbin(conf *config.OpsLinkConfig) (*Casbin, error) {
@@ -167,115 +148,6 @@ func (c *CasbinAdapter) Casbin() (*casbin.Enforcer, error) {
 	enforcer.AddFunction("isSuper", isSuper)
 	_ = enforcer.LoadPolicy()
 	return enforcer, nil
-}
-
-type Policy interface {
-	Add(a any) bool
-	AddGroupingPolicy(role string, group string) bool
-	Update(ur *UpdateRequest) (bool, error)
-	Delete(a any) bool
-}
-
-func (c *Casbin) Add(a any) bool {
-	if casbinModel, ok := a.(*CasbinModel); ok {
-		//ABAC
-		if casbinModel.PType == "p" {
-			addExist := c.Enforcer.HasPolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
-			if !addExist {
-				result, _ := c.Enforcer.AddPolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
-				if result {
-					err := c.Enforcer.SavePolicy()
-					if err != nil {
-						return false
-					}
-				}
-				return true
-			}
-		}
-		//role
-		if casbinModel.PType == "g" {
-			addExist := c.Enforcer.HasGroupingPolicy(casbinModel.Role, casbinModel.Domain)
-			if !addExist {
-				result, _ := c.Enforcer.AddGroupingPolicy(casbinModel.Role, casbinModel.Domain)
-				if result {
-					err := c.Enforcer.SavePolicy()
-					if err != nil {
-						return false
-					}
-				}
-				return true
-			}
-		}
-		return false
-	}
-	return false
-}
-func (c *Casbin) AddGroupingPolicy(role string, group string) bool {
-	s, _ := c.Enforcer.AddRoleForUser(role, group)
-	if s {
-		logger.Infow("InitPermission", role+":"+group, "权限初始化成功")
-		return s
-	}
-	return false
-}
-func (c *Casbin) Update(ur *UpdateRequest) (bool, error) {
-
-	if ur.OldData.PType == "p" && ur.NewData.PType == "p" {
-		updateExist := c.Enforcer.HasPolicy(ur.NewData.Role, ur.NewData.Domain, ur.NewData.Source, ur.NewData.Behavior)
-		if updateExist {
-			return false, errors.New("已存在！")
-		}
-		//old,new
-		policy, err := c.Enforcer.UpdatePolicy([]string{ur.OldData.Role, ur.OldData.Domain, ur.OldData.Source, ur.OldData.Behavior}, []string{ur.NewData.Role, ur.NewData.Domain, ur.NewData.Source, ur.NewData.Behavior})
-		if err != nil {
-			return policy, err
-		}
-		if policy {
-			err = c.Enforcer.SavePolicy()
-			if err != nil {
-				return false, err
-			}
-		}
-		return policy, err
-
-	}
-	return false, errors.New("实体有误！")
-}
-func (c *Casbin) Delete(a any) bool {
-	if casbinModel, ok := a.(*CasbinModel); ok {
-		//ABAC
-		if casbinModel.PType == "p" {
-			result, _ := c.Enforcer.RemovePolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
-			if result {
-				err := c.Enforcer.SavePolicy()
-				if err != nil {
-					return false
-				}
-			}
-			return result
-		}
-		//role
-		if casbinModel.PType == "g" {
-			result, err := c.Enforcer.RemoveGroupingPolicy(casbinModel.Role, casbinModel.Domain)
-			if err != nil {
-				logger.Warnw("RemoveGroupingPolicy", err, "")
-			}
-			if result {
-				err := c.Enforcer.SavePolicy()
-				if err != nil {
-					return false
-				}
-				return true
-			}
-		}
-		return false
-	}
-	return false
-}
-
-// EnforcerProvider 接口定义
-type EnforcerProvider interface {
-	GetEnforcer(modelConf string) (*casbin.Enforcer, error)
 }
 
 // EtcdAdapterProvider 结构体实现 EnforcerProvider 接口

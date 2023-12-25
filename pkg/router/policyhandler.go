@@ -26,12 +26,12 @@ func BuildRolePolicy(cb *casbin.Casbin, ss store.StoreService, middleware ...gin
 }
 
 // AddPolicy 新增权限策略 -manager
-func (ph *PolicyHandler) AddPolicy(ctx *gin.Context, c *casbin.Casbin) {
+func (ph *PolicyHandler) AddPolicy(ctx *gin.Context) {
 	casbinModel, err := kubehandler.ProcessManagerRequestParams(ctx)
 	if err != nil {
 		return
 	}
-	add := c.Add(casbinModel)
+	add := ph.cb.Add(casbinModel)
 	if add == false {
 		ctx.JSONP(http.StatusOK, gin.H{"message": "添加重复", "status": http.StatusOK})
 		return
@@ -41,13 +41,13 @@ func (ph *PolicyHandler) AddPolicy(ctx *gin.Context, c *casbin.Casbin) {
 }
 
 // DeletePolicy  删除权限策略 -manager
-func (ph *PolicyHandler) DeletePolicy(ctx *gin.Context, c *casbin.Casbin) {
+func (ph *PolicyHandler) DeletePolicy(ctx *gin.Context) {
 	casbinModel, err := kubehandler.ProcessManagerRequestParams(ctx)
 	if err != nil {
 		return
 	}
-	add := c.Delete(casbinModel)
-	if add == false {
+	add, err := ph.cb.Delete(casbinModel)
+	if add == false || err != nil {
 		ctx.JSONP(http.StatusOK, gin.H{"message": "删除失败", "status": http.StatusOK})
 		return
 	}
@@ -56,13 +56,13 @@ func (ph *PolicyHandler) DeletePolicy(ctx *gin.Context, c *casbin.Casbin) {
 }
 
 // UpdatePolicy  删除权限策略 -manager
-func (ph *PolicyHandler) UpdatePolicy(ctx *gin.Context, c *casbin.Casbin) {
+func (ph *PolicyHandler) UpdatePolicy(ctx *gin.Context) {
 	var req *casbin.UpdateRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	update, err := c.Update(req)
+	update, err := ph.cb.Update(req)
 	if update == false || err != nil {
 		ctx.JSONP(http.StatusInternalServerError, gin.H{"message": err.Error(), "status": http.StatusInternalServerError})
 		return
@@ -95,6 +95,29 @@ func (ph *PolicyHandler) ListALlRoles(ctx *gin.Context) {
 		return
 	}
 }
+func (ph *PolicyHandler) ListUses(ctx *gin.Context) {
+
+}
+func (ph *PolicyHandler) ListRoles(ctx *gin.Context) {
+
+}
+
+func (ph *PolicyHandler) ListMyPolicy(ctx *gin.Context) {
+	uname := ctx.Param("uname")
+	//r2, err := ph.ss.Get(ctx, uname)
+	//if err != nil || r2 == nil {
+	//	ErrorResponse(ctx, http.StatusBadRequest, uname+" 不存在")
+	//	return
+	//}
+
+	policy, err := ph.cb.ListMyPolicy(uname)
+	if err != nil {
+		ErrorResponse(ctx, http.StatusBadRequest, uname+" 不存在")
+		return
+	}
+	kubehandler.KubeSuccessMsgResponse(ctx, http.StatusOK, policy)
+	return
+}
 
 func (ph *PolicyHandler) GetName() string {
 	return "policy"
@@ -104,7 +127,7 @@ func (ph *PolicyHandler) GetName() string {
 func (ph *PolicyHandler) ReadRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
 	read := g.Use(middle...)
 	{
-		read.GET("listRole", func(ctx *gin.Context) { ph.ListALlRoles(ctx) })
+		read.GET("policies/:uname", func(ctx *gin.Context) { ph.ListMyPolicy(ctx) })
 	}
 }
 
@@ -112,8 +135,12 @@ func (ph *PolicyHandler) ReadRegister(g gin.IRoutes, middle ...gin.HandlerFunc) 
 func (ph *PolicyHandler) WriteRegister(g gin.IRoutes, middle ...gin.HandlerFunc) {
 	admin := g.Use(middle...)
 	{
-		admin.POST("add", func(ctx *gin.Context) { ph.AddPolicy(ctx, ph.cb) })
-		admin.GET("delete", func(ctx *gin.Context) { ph.DeletePolicy(ctx, ph.cb) })
-		admin.POST("update", func(ctx *gin.Context) { ph.UpdatePolicy(ctx, ph.cb) })
+		admin.POST("add", func(ctx *gin.Context) { ph.AddPolicy(ctx) })
+		admin.GET("delete", func(ctx *gin.Context) { ph.DeletePolicy(ctx) })
+		admin.POST("update", func(ctx *gin.Context) { ph.UpdatePolicy(ctx) })
+
+		admin.GET("listRole", func(ctx *gin.Context) { ph.ListALlRoles(ctx) })
+		admin.GET("users", func(ctx *gin.Context) { ph.ListUses(ctx) })
+		admin.POST("roles", func(ctx *gin.Context) { ph.ListRoles(ctx) })
 	}
 }

@@ -3,7 +3,7 @@ module github.com/denovo/permission
 go 1.21
 
 require (
-	github.com/casbin/casbin v1.7.0
+	github.com/casbin/casbin/v2 v2.80.0
 	github.com/coreos/etcd v3.3.22+incompatible
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-gonic/gin v1.9.1
@@ -26,9 +26,8 @@ require (
 )
 
 require (
-	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
-	github.com/casbin/casbin/v2 v2.80.0 // indirect
+	github.com/casbin/casbin v1.7.0 // indirect
 	github.com/casbin/govaluate v1.1.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
