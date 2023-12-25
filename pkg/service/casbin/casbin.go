@@ -1,7 +1,8 @@
 package casbin
 
 import (
-	"github.com/casbin/casbin"
+	"errors"
+	"github.com/casbin/casbin/v2"
 	config "github.com/denovo/permission/config"
 	"github.com/oppslink/protocol/logger"
 	"github.com/sebastianliu/etcd-adapter"
@@ -71,6 +72,12 @@ type CasbinModel struct {
 	Domain   string `json:"domain" form:"v1" description:"域/角色"`
 	Source   string `json:"source" form:"v2" description:"资源"`
 	Behavior string `json:"behavior" form:"v3" description:"行为"`
+}
+
+// UpdateRequest 是请求的结构体，包含了旧实体和新实体的信息
+type UpdateRequest struct {
+	OldData *CasbinModel `json:"old_policy"`
+	NewData *CasbinModel `json:"new_policy"`
 }
 
 func InitCasbin(conf *config.OpsLinkConfig) (*Casbin, error) {
@@ -153,7 +160,10 @@ func NewCasbinModel(s0, s1, s2, s3, s4 string) *CasbinModel {
 func (c *CasbinAdapter) Casbin() (*casbin.Enforcer, error) {
 	// Init etcd adapter
 	adapter := etcdadapter.NewAdapter(c.etcdEndpoint, c.key)
-	enforcer := casbin.NewEnforcer(c.modelConf, adapter)
+	enforcer, err := casbin.NewEnforcer(c.modelConf, adapter)
+	if err != nil {
+		return nil, err
+	}
 	enforcer.AddFunction("isSuper", isSuper)
 	_ = enforcer.LoadPolicy()
 	return enforcer, nil
@@ -162,7 +172,7 @@ func (c *CasbinAdapter) Casbin() (*casbin.Enforcer, error) {
 type Policy interface {
 	Add(a any) bool
 	AddGroupingPolicy(role string, group string) bool
-	Update(a any) bool
+	Update(ur *UpdateRequest) (bool, error)
 	Delete(a any) bool
 }
 
@@ -172,7 +182,7 @@ func (c *Casbin) Add(a any) bool {
 		if casbinModel.PType == "p" {
 			addExist := c.Enforcer.HasPolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
 			if !addExist {
-				result := c.Enforcer.AddPolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
+				result, _ := c.Enforcer.AddPolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
 				if result {
 					err := c.Enforcer.SavePolicy()
 					if err != nil {
@@ -186,7 +196,7 @@ func (c *Casbin) Add(a any) bool {
 		if casbinModel.PType == "g" {
 			addExist := c.Enforcer.HasGroupingPolicy(casbinModel.Role, casbinModel.Domain)
 			if !addExist {
-				result := c.Enforcer.AddGroupingPolicy(casbinModel.Role, casbinModel.Domain)
+				result, _ := c.Enforcer.AddGroupingPolicy(casbinModel.Role, casbinModel.Domain)
 				if result {
 					err := c.Enforcer.SavePolicy()
 					if err != nil {
@@ -201,37 +211,41 @@ func (c *Casbin) Add(a any) bool {
 	return false
 }
 func (c *Casbin) AddGroupingPolicy(role string, group string) bool {
-	s := c.Enforcer.AddRoleForUser(role, group)
+	s, _ := c.Enforcer.AddRoleForUser(role, group)
 	if s {
 		logger.Infow("InitPermission", role+":"+group, "权限初始化成功")
 		return s
 	}
 	return false
 }
-func (c *Casbin) Update(a any) bool {
-	if casbinModel, ok := a.(*CasbinModel); ok {
-		//todo:判断当前身份是否已存在，若从只读更新为可写，新增write，删除只读。因为可写包括只读，冗余了。
-		if casbinModel.PType == "p" {
-			//过滤下标从0,从属性开始，
-			policy := c.Enforcer.GetFilteredNamedPolicy("p", 0, casbinModel.Role)
-			for _, strings := range policy {
-				println(strings)
+func (c *Casbin) Update(ur *UpdateRequest) (bool, error) {
+
+	if ur.OldData.PType == "p" && ur.NewData.PType == "p" {
+		updateExist := c.Enforcer.HasPolicy(ur.NewData.Role, ur.NewData.Domain, ur.NewData.Source, ur.NewData.Behavior)
+		if updateExist {
+			return false, errors.New("已存在！")
+		}
+		//old,new
+		policy, err := c.Enforcer.UpdatePolicy([]string{ur.OldData.Role, ur.OldData.Domain, ur.OldData.Source, ur.OldData.Behavior}, []string{ur.NewData.Role, ur.NewData.Domain, ur.NewData.Source, ur.NewData.Behavior})
+		if err != nil {
+			return policy, err
+		}
+		if policy {
+			err = c.Enforcer.SavePolicy()
+			if err != nil {
+				return false, err
 			}
 		}
-		if casbinModel.PType == "g" {
-			policy := c.Enforcer.GetFilteredGroupingPolicy(0, casbinModel.Role)
-			for _, strings := range policy {
-				println(strings)
-			}
-		}
+		return policy, err
+
 	}
-	return false
+	return false, errors.New("实体有误！")
 }
 func (c *Casbin) Delete(a any) bool {
 	if casbinModel, ok := a.(*CasbinModel); ok {
 		//ABAC
 		if casbinModel.PType == "p" {
-			result := c.Enforcer.RemovePolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
+			result, _ := c.Enforcer.RemovePolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
 			if result {
 				err := c.Enforcer.SavePolicy()
 				if err != nil {
@@ -242,7 +256,10 @@ func (c *Casbin) Delete(a any) bool {
 		}
 		//role
 		if casbinModel.PType == "g" {
-			result := c.Enforcer.RemoveGroupingPolicy(casbinModel.Role, casbinModel.Domain)
+			result, err := c.Enforcer.RemoveGroupingPolicy(casbinModel.Role, casbinModel.Domain)
+			if err != nil {
+				logger.Warnw("RemoveGroupingPolicy", err, "")
+			}
 			if result {
 				err := c.Enforcer.SavePolicy()
 				if err != nil {
@@ -269,7 +286,10 @@ type EtcdAdapterProvider struct {
 
 func (eap *EtcdAdapterProvider) GetEnforcer(modelConf string) (*casbin.Enforcer, error) {
 	adapter := etcdadapter.NewAdapter(eap.etcdEndpoint, eap.key)
-	enforcer := casbin.NewEnforcer(modelConf, adapter)
+	enforcer, err := casbin.NewEnforcer(modelConf, adapter)
+	if err != nil {
+		return nil, err
+	}
 	enforcer.AddFunction("isSuper", isSuper)
 	_ = enforcer.LoadPolicy()
 	enforcer.EnableAutoSave(true)
@@ -282,7 +302,7 @@ type CsvAdapterProvider struct {
 }
 
 func (cap *CsvAdapterProvider) GetEnforcer(modelConf string) (*casbin.Enforcer, error) {
-	enforcer := casbin.NewEnforcer(modelConf, cap.csvFilePath)
+	enforcer, _ := casbin.NewEnforcer(modelConf, cap.csvFilePath)
 	enforcer.AddFunction("isSuper", isSuper)
 	_ = enforcer.LoadPolicy()
 	// enable auto save todo：is valid?

@@ -57,13 +57,14 @@ func (ph *PolicyHandler) DeletePolicy(ctx *gin.Context, c *casbin.Casbin) {
 
 // UpdatePolicy  删除权限策略 -manager
 func (ph *PolicyHandler) UpdatePolicy(ctx *gin.Context, c *casbin.Casbin) {
-	casbinModel, err := kubehandler.ProcessManagerRequestParams(ctx)
-	if err != nil {
+	var req *casbin.UpdateRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	add := c.Update(casbinModel)
-	if add == false {
-		ctx.JSONP(http.StatusOK, gin.H{"message": "更新失败", "status": http.StatusOK})
+	update, err := c.Update(req)
+	if update == false || err != nil {
+		ctx.JSONP(http.StatusInternalServerError, gin.H{"message": err.Error(), "status": http.StatusInternalServerError})
 		return
 	}
 	ctx.JSONP(http.StatusOK, gin.H{"message": "更新成功", "status": http.StatusOK})

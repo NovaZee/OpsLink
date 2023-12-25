@@ -64,10 +64,10 @@ func (r *Router) JWT() gin.HandlerFunc {
 		resource, _ := c.Get("resource")
 		action, _ := c.Get("action")
 		_, _ = c.Get("version")
-		enforce := r.cb.Enforcer.Enforce(claims.UserName, domain.(string), resource.(string), action.(string))
+		enforce, err := r.cb.Enforcer.Enforce(claims.UserName, domain.(string), resource.(string), action.(string))
 		if !enforce {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error":  ErrorAuthCheckTokenFail,
+				"error":  err,
 				"status": http.StatusForbidden,
 			})
 			return
