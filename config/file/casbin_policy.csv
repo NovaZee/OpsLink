@@ -1,9 +1,7 @@
 p, initAdmin, default, *, write
 p, initAdmin, kube-system, *, write
 p, superAdmin, *, *, write
-p, test, default, nginx-deployment, write
-p, opslink, default, nginx-deployment, write
 p, policyAdmin, policy, *, write
 g, admin, superAdmin
-g, opslink, initAdmin
 g, opslink, policyAdmin
+g, opslink, initAdmin

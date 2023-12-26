@@ -127,15 +127,6 @@ func (c *Casbin) InitPermission() {
 	}
 
 }
-func NewCasbinModel(s0, s1, s2, s3, s4 string) *CasbinModel {
-	return &CasbinModel{
-		PType:    s0,
-		Role:     s1,
-		Domain:   s2,
-		Source:   s3,
-		Behavior: s4,
-	}
-}
 
 // Casbin Casbin: usage for policy upate
 func (c *CasbinAdapter) Casbin() (*casbin.Enforcer, error) {

@@ -12,13 +12,14 @@ const (
 	ErrorAuthCheckTokenFail    = " check fail "
 	ErrorAuthCheckTokenExpired = " token expired "
 	ErrorParamsError           = " bind params error  "
+	ErrorBadPermission         = " Bad Permission！  "
 )
 
 type Router struct {
 	Router *gin.Engine
 	cb     *casbin.Casbin
 
-	FrontHandler   []Front
+	LoginHandler   []Front
 	ManagerHandler []Management
 }
 
@@ -34,7 +35,7 @@ func InitRouter(opslinkServer *service.OpsLinkServer) (*Router, error) {
 		return nil, err
 	}
 	router.InitHandler(opslinkServer)
-	registerFront(router, router.FrontHandler...)
+	registerFront(router, router.LoginHandler...)
 	registerManager(router, router.ManagerHandler...)
 	engine.Run(":" + opslinkServer.Config.Server.HttpPort).Error()
 	return router, nil
@@ -56,14 +57,14 @@ func (r *Router) InitHandler(opslinkServer *service.OpsLinkServer) {
 		kubehandler.BuildNamespace(handler.NamespaceHandler),
 		BuildRolePolicy(opslinkServer.Casbin, opslinkServer.StoreService),
 	}
-	r.FrontHandler = front
+	r.LoginHandler = front
 	r.ManagerHandler = in
 }
 
 // registerFront 注册前台路由（查看）
 func registerFront(router *Router, handlers ...Front) {
 	for _, h := range handlers {
-		h.ReadRegister(router.Router.Group("v1/f"))
+		h.ReadRegister(router.Router.Group("v1/p"))
 	}
 }
 

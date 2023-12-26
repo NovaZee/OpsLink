@@ -3,6 +3,7 @@ package casbin
 import (
 	"errors"
 	"github.com/casbin/casbin/v2"
+	"github.com/denovo/permission/protoc/model"
 	"github.com/oppslink/protocol/logger"
 )
 
@@ -16,60 +17,83 @@ type EnforcerProvider interface {
 }
 
 type Policy interface {
-	Add(a any) bool
+	BindingRoles(gModel *model.GModel) (bool, error)
+	UnBindingRoles(gModel *model.GModel) (bool, error)
+	AddPolicy(pModel *model.PModel) (bool, error)
+	Delete(pModel *model.PModel) (bool, error)
+	Update(ur *model.UpdateRequest) (bool, error)
+
 	AddGroupingPolicy(role string, group string) bool
-	Update(ur *UpdateRequest) (bool, error)
-	Delete(a any) (bool, error)
-	ListMyPolicy(uname string) ([]CasbinModel, error)
+	ListMyPolicy(uname string) *model.BackResp
+	ListRoles(role string) []*model.GModel
 }
 
-type CasbinModel struct {
-	PType    string `json:"p_type" form:"p_type" description:"策略"`
-	Role     string `json:"role" form:"v0" description:"角色/用户"`
-	Domain   string `json:"domain" form:"v1" description:"域/角色"`
-	Source   string `json:"source" form:"v2" description:"资源"`
-	Behavior string `json:"behavior" form:"v3" description:"行为"`
-}
-
-// UpdateRequest 是请求的结构体，包含了旧实体和新实体的信息
-type UpdateRequest struct {
-	OldData *CasbinModel `json:"old_policy"`
-	NewData *CasbinModel `json:"new_policy"`
-}
-
-func (c *Casbin) Add(a any) bool {
-	if casbinModel, ok := a.(*CasbinModel); ok {
-		//ABAC
-		if casbinModel.PType == "p" {
-			addExist := c.Enforcer.HasPolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
-			if !addExist {
-				result, _ := c.Enforcer.AddPolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
-				if result {
-					err := c.Enforcer.SavePolicy()
-					if err != nil {
-						return false
-					}
+func (c *Casbin) UnBindingRoles(gModel *model.GModel) (bool, error) {
+	if gModel.PType == "g" {
+		addExist := c.Enforcer.HasGroupingPolicy(gModel.User, gModel.Role)
+		if addExist {
+			policy := c.Enforcer.GetFilteredGroupingPolicy(1, gModel.Role)
+			if len(policy) <= 1 {
+				filteredPolicy, err := c.Enforcer.RemoveFilteredPolicy(0, gModel.Role)
+				if err != nil {
+					return false, err
 				}
-				return true
-			}
-		}
-		//role
-		if casbinModel.PType == "g" {
-			addExist := c.Enforcer.HasGroupingPolicy(casbinModel.Role, casbinModel.Domain)
-			if !addExist {
-				result, _ := c.Enforcer.AddGroupingPolicy(casbinModel.Role, casbinModel.Domain)
-				if result {
-					err := c.Enforcer.SavePolicy()
-					if err != nil {
-						return false
-					}
+				if !filteredPolicy {
+					return false, errors.New("内部错误")
 				}
-				return true
 			}
+			result, _ := c.Enforcer.RemoveGroupingPolicy(gModel.User, gModel.Role)
+			if result {
+				err := c.Enforcer.SavePolicy()
+				if err != nil {
+					return false, err
+				}
+			}
+			return true, nil
 		}
-		return false
 	}
-	return false
+	return false, errors.New("权限不存在")
+}
+
+func (c *Casbin) BindingRoles(gModel *model.GModel) (bool, error) {
+	if gModel.PType == "g" {
+		policy := c.Enforcer.GetFilteredPolicy(0, gModel.Role)
+		if len(policy) == 0 {
+			return false, errors.New("角色未进行权限初始化,请先初始化角色权限！")
+		}
+		addExist := c.Enforcer.HasGroupingPolicy(gModel.User, gModel.Role)
+		if !addExist {
+			result, _ := c.Enforcer.AddGroupingPolicy(gModel.User, gModel.Role)
+			if result {
+				err := c.Enforcer.SavePolicy()
+				if err != nil {
+					return false, err
+				}
+			}
+			return true, nil
+		}
+	}
+	return false, errors.New("内部错误！")
+}
+
+func (c *Casbin) AddPolicy(pModel *model.PModel) (bool, error) {
+	if pModel.PType == "p" {
+		addExist := c.Enforcer.HasPolicy(pModel.UserRole, pModel.Namespace, pModel.Source, pModel.Action)
+		if !addExist {
+			result, err := c.Enforcer.AddPolicy(pModel.UserRole, pModel.Namespace, pModel.Source, pModel.Action)
+			if err != nil {
+				return false, err
+			}
+			if result {
+				err = c.Enforcer.SavePolicy()
+				if err != nil {
+					return false, err
+				}
+			}
+			return true, nil
+		}
+	}
+	return false, errors.New("内部错误！")
 }
 func (c *Casbin) AddGroupingPolicy(role string, group string) bool {
 	s, _ := c.Enforcer.AddRoleForUser(role, group)
@@ -79,15 +103,19 @@ func (c *Casbin) AddGroupingPolicy(role string, group string) bool {
 	}
 	return false
 }
-func (c *Casbin) Update(ur *UpdateRequest) (bool, error) {
+func (c *Casbin) Update(ur *model.UpdateRequest) (bool, error) {
 
-	if ur.OldData.PType == "p" && ur.NewData.PType == "p" {
-		updateExist := c.Enforcer.HasPolicy(ur.NewData.Role, ur.NewData.Domain, ur.NewData.Source, ur.NewData.Behavior)
+	if ur.OldPolicy.PType == "p" && ur.NewPolicy.PType == "p" {
+		updateExist := c.Enforcer.HasPolicy(ur.NewPolicy.UserRole, ur.NewPolicy.Namespace, ur.NewPolicy.Source, ur.NewPolicy.Action)
 		if updateExist {
 			return false, errors.New("已存在！")
 		}
+		oldExist := c.Enforcer.HasPolicy(ur.OldPolicy.UserRole, ur.OldPolicy.Namespace, ur.OldPolicy.Source, ur.OldPolicy.Action)
+		if !oldExist {
+			return false, errors.New("权限不存在！")
+		}
 		//old,new
-		policy, err := c.Enforcer.UpdatePolicy([]string{ur.OldData.Role, ur.OldData.Domain, ur.OldData.Source, ur.OldData.Behavior}, []string{ur.NewData.Role, ur.NewData.Domain, ur.NewData.Source, ur.NewData.Behavior})
+		policy, err := c.Enforcer.UpdatePolicy([]string{ur.OldPolicy.UserRole, ur.OldPolicy.Namespace, ur.OldPolicy.Source, ur.OldPolicy.Action}, []string{ur.NewPolicy.UserRole, ur.NewPolicy.Namespace, ur.NewPolicy.Source, ur.NewPolicy.Action})
 		if err != nil {
 			return policy, err
 		}
@@ -103,87 +131,57 @@ func (c *Casbin) Update(ur *UpdateRequest) (bool, error) {
 	return false, errors.New("实体有误！")
 }
 
-func (c *Casbin) ListMyPolicy(uname string) (res []CasbinModel, err error) {
-	policy := c.Enforcer.GetFilteredNamedPolicy("p", 0, uname)
-
-	if len(policy) != 0 {
-		res = c.ConvertToCasbinModel(policy, "p")
-	}
-
+func (c *Casbin) ListMyPolicy(uname string) (res *model.BackResp) {
+	res = &model.BackResp{}
 	group := c.Enforcer.GetFilteredGroupingPolicy(0, uname)
-	groupList := c.ConvertToCasbinModel(group, "g")
-	res = append(res, groupList...)
-	return res, nil
+	var roles []string
+	var policies [][]string
+	if len(group) != 0 {
+		res.GPolicy = filterGModel(group)
+		roles = filterRoles(group)
+		roles = append(roles, uname)
+	}
+	if len(roles) != 0 {
+		for i := range roles {
+			policies = append(policies, c.Enforcer.GetFilteredPolicy(0, roles[i])...)
+		}
+	}
+	if len(policies) != 0 {
+		res.PPolicy = filterPModel(policies)
+	}
+	return res
 }
-func (c *Casbin) Delete(a any) (bool, error) {
-	if casbinModel, ok := a.(*CasbinModel); ok {
-		//ABAC
-		if casbinModel.PType == "p" {
-
-			policy := c.Enforcer.GetFilteredGroupingPolicy(1, casbinModel.Role)
+func (c *Casbin) Delete(pModel *model.PModel) (bool, error) {
+	if pModel.PType == "p" {
+		hasPolicy := c.Enforcer.HasPolicy(pModel.UserRole, pModel.Namespace, pModel.Source, pModel.Action)
+		if !hasPolicy {
+			return false, errors.New("权限不存在！")
+		}
+		filteredPolicy := c.Enforcer.GetFilteredPolicy(0, pModel.UserRole)
+		// 若删除的是角色,查询角色下是否有绑定用户
+		if len(filteredPolicy) <= 1 {
+			policy := c.Enforcer.GetFilteredGroupingPolicy(1, pModel.UserRole)
 			if len(policy) != 0 {
 				return false, errors.New("该角色下存在绑定用户！")
 			}
-			result, _ := c.Enforcer.RemovePolicy(casbinModel.Role, casbinModel.Domain, casbinModel.Source, casbinModel.Behavior)
-			if result {
-				err := c.Enforcer.SavePolicy()
-				if err != nil {
-					return false, errors.New("内部错误！")
-				}
-			}
-			return result, nil
 		}
-		//role
-		if casbinModel.PType == "g" {
-			result, err := c.Enforcer.RemoveGroupingPolicy(casbinModel.Role, casbinModel.Domain)
+		result, _ := c.Enforcer.RemovePolicy(pModel.UserRole, pModel.Namespace, pModel.Source, pModel.Action)
+		if result {
+			err := c.Enforcer.SavePolicy()
 			if err != nil {
-				logger.Warnw("RemoveGroupingPolicy", err, "")
-				return false, err
-			}
-			if result {
-				err = c.Enforcer.SavePolicy()
-				if err != nil {
-					return false, err
-				}
-				return true, nil
+				return false, errors.New("内部错误！")
 			}
 		}
-		return false, errors.New("类型不存在！")
+		return result, nil
 	}
 	return false, errors.New("实体错误！")
 }
 
-// 将 [][]string 转换为 []CasbinModel
-func (c *Casbin) ConvertToCasbinModel(data [][]string, pType string) (res []CasbinModel) {
-	if pType == "p" {
-		for _, row := range data {
-			if len(row) >= 4 {
-				model := CasbinModel{
-					Role:     row[0],
-					Domain:   row[1],
-					Source:   row[2],
-					Behavior: row[3],
-					PType:    pType,
-				}
-				res = append(res, model)
-			}
-		}
+func (c *Casbin) ListRoles(role string) (gModel []*model.GModel) {
+	policy := c.Enforcer.GetFilteredGroupingPolicy(1, role)
+	if len(policy) != 0 {
+		gModel = filterGModel(policy)
+		return
 	}
-	if pType == "g" {
-		for _, row := range data {
-			if len(row) >= 2 {
-				model := CasbinModel{
-					Role:   row[0],
-					Domain: row[1],
-					PType:  pType,
-				}
-				res = append(res, model)
-				policy := c.Enforcer.GetFilteredNamedPolicy("p", 0, model.Domain)
-				if len(policy) != 0 {
-					res = append(res, c.ConvertToCasbinModel(policy, "p")...)
-				}
-			}
-		}
-	}
-	return res
+	return
 }

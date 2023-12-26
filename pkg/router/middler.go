@@ -31,7 +31,7 @@ func (r *Router) JWT() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if r := recover(); r != nil {
-				logger.Debugw("jwt check ", "error", r)
+				logger.Debugw("gin error ", "error", r)
 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%s", r), "status": http.StatusInternalServerError})
 				return
 			}
@@ -60,14 +60,13 @@ func (r *Router) JWT() gin.HandlerFunc {
 		}
 		//TODO:
 		//获取请求的资源
-		domain, _ := c.Get("domain")
-		resource, _ := c.Get("resource")
+		namespace, _ := c.Get("namespace")
+		source, _ := c.Get("source")
 		action, _ := c.Get("action")
-		_, _ = c.Get("version")
-		enforce, err := r.cb.Enforcer.Enforce(claims.UserName, domain.(string), resource.(string), action.(string))
+		enforce, err := r.cb.Enforcer.Enforce(claims.UserName, namespace.(string), source.(string), action.(string))
 		if !enforce {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error":  err,
+				"error":  ErrorBadPermission,
 				"status": http.StatusForbidden,
 			})
 			return
@@ -86,7 +85,7 @@ func (r *Router) ExtractParams() gin.HandlerFunc {
 		parts := strings.Split(path, "/")
 		version := parts[1]
 		action := parts[2]
-		var resource, domain string
+		var source, namespace string
 		if action == "w" {
 			action = "write"
 		}
@@ -95,19 +94,21 @@ func (r *Router) ExtractParams() gin.HandlerFunc {
 		}
 		// ns name 为空，证明当前路径请求的是列表
 		if c.Param("name") != "" {
-			resource = c.Param("name")
+			source = c.Param("name")
 		} else {
-			resource = "*"
+			source = "*"
 		}
 		if c.Param("ns") != "" {
-			domain = c.Param("ns")
+			namespace = c.Param("ns")
+		} else if parts[3] == "policy" {
+			namespace = "policy"
 		} else {
-			domain = "*"
+			namespace = "*"
 		}
 		c.Set("version", version)
 		c.Set("action", action)
-		c.Set("resource", resource)
-		c.Set("domain", domain)
+		c.Set("source", source)
+		c.Set("namespace", namespace)
 
 		c.Next()
 	}

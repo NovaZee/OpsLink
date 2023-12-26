@@ -64,6 +64,8 @@ func (server *OpsLinkServer) Stop(force bool) {
 	//todo:如果使用本地内存启动，关闭之前等待数据同步
 	//Before closing, check if there is any unsynchronized data.
 	server.StoreService.Stop()
+	// casbin 内存数据刷新csv
+	server.Casbin.Enforcer.SavePolicy()
 	close(server.doneChan)
 
 	// wait for fully closed
