@@ -29,3 +29,13 @@
     background: lightgray;
     border-radius: 6px;
 }
+
+.inputGroup {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.inputGroup button {
+    margin-right: 10px;
+    display: block;
+}

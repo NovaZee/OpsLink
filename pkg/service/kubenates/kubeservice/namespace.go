@@ -19,7 +19,7 @@ func NewNamespaceService(client kubernetes.Interface) *NamespaceService {
 }
 
 func (nss *NamespaceService) List() (res []*kube.Namespace) {
-	all := nss.Nsi.ListAll(0)
+	all := nss.Nsi.ListAll(-1)
 	for _, ns := range all {
 		res = append(res, &kube.Namespace{
 			Namespace:  ns.Name,

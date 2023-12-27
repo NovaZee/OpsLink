@@ -2,12 +2,24 @@
 <html>
 <head>
     <title>Logs</title>
+    <meta charset="UTF-8">
     <link rel="stylesheet" type="text/css" href="styles.css">
 </head>
 <body>
 <h1>Logs</h1>
-<button id="connectButton">Checkout Logs</button>
 <div id="inputContainer">
+    <div class="inputGroup">
+        <button id="nsButton">命名空间</button>
+        <div id="nsDiv" class="fixedDiv"></div>
+    </div>
+    <div class="inputGroup">
+        <button id="deploymentButton">负载资源</button>
+        <div id="deploymentDiv" class="fixedDiv"></div>
+    </div>
+</div>
+<div class="inputGroup">
+    <button id="connectButton">Checkout Logs</button>
+    <br>
     <input id="nsInput" type="text" placeholder="Namespace">
     <input id="podNameInput" type="text" placeholder="Pod Name">
     <input id="containerInput" type="text" placeholder="Container">

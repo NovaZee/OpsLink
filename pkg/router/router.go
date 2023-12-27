@@ -5,7 +5,9 @@ import (
 	"github.com/denovo/permission/pkg/service"
 	"github.com/denovo/permission/pkg/service/casbin"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/cors"
 	"io/ioutil"
+	"net/http"
 )
 
 const (
@@ -27,6 +29,12 @@ func InitRouter(opslinkServer *service.OpsLinkServer) (*Router, error) {
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = ioutil.Discard
 	engine := gin.Default()
+	// 添加CORS中间件
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"http://localhost:63342"}, // 允许前端应用的源
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"Authorization", "Content-Type"},
+	})
 	engine.Use(Logger())
 	engine.GET("/validate")
 
@@ -37,7 +45,9 @@ func InitRouter(opslinkServer *service.OpsLinkServer) (*Router, error) {
 	router.InitHandler(opslinkServer)
 	registerFront(router, router.LoginHandler...)
 	registerManager(router, router.ManagerHandler...)
-	engine.Run(":" + opslinkServer.Config.Server.HttpPort).Error()
+	handler := c.Handler(engine)
+	//engine.Run(":" + opslinkServer.Config.Server.HttpPort).Error()
+	http.ListenAndServe(":8082", handler)
 	return router, nil
 }
 
