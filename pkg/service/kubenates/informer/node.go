@@ -15,7 +15,7 @@ func (n *NodeInformer) OnAdd(obj interface{}, isInInitialList bool) {
 	if node, ok := obj.(*corev1.Node); ok {
 		n.Add(node)
 	}
-	logger.Infow("node informer webhook", "action", "OnAdd", "Name", obj.(*corev1.Node).Name)
+	logger.Debugw("node informer webhook", "action", "OnAdd", "Name", obj.(*corev1.Node).Name)
 }
 
 func (n *NodeInformer) OnUpdate(oldObj, newObj interface{}) {
@@ -23,14 +23,14 @@ func (n *NodeInformer) OnUpdate(oldObj, newObj interface{}) {
 	if err != nil {
 		logger.Warnw("node informer webhook", err, "action", "OnUpdate")
 	}
-	logger.Infow("node informer webhook", "action", "OnUpdate", "Name", newObj.(*corev1.Node).Name)
+	logger.Debugw("node informer webhook", "action", "OnUpdate", "Name", newObj.(*corev1.Node).Name)
 }
 
 func (n *NodeInformer) OnDelete(obj interface{}) {
 	if node, ok := obj.(*corev1.Node); ok {
 		n.Delete(node)
 	}
-	logger.Infow("node informer webhook", "action", "OnDelete", "Name", obj.(*corev1.Node).Name)
+	logger.Debugw("node informer webhook", "action", "OnDelete", "Name", obj.(*corev1.Node).Name)
 }
 
 func (n *NodeInformer) Add(node *corev1.Node) {

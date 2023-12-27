@@ -1,7 +1,7 @@
 # server config
 server:
   # run mode ： dev debug product
-  run_mode: debug
+  run_mode: dev
   # http port
   http_port: 8082
   # read time out /S
@@ -13,9 +13,9 @@ server:
 #    - "http://127.0.0.1:2379"
 #  dial_timeout: 5
 kubernetes:
-  kubeconfig: './denovo.yaml'
+  kubeconfig: './test.yaml'
 logging:
-  level: debug
+  level: info
   json: false
 # Casbin权限策略配置
 casbin_path:

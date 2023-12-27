@@ -17,7 +17,7 @@ func (ri *RBACInformer) OnAdd(obj interface{}, isInInitialList bool) {
 	if role, ok := obj.(*rbacv1.Role); ok {
 		ri.Add(role)
 	}
-	logger.Infow("rbac informer webhook", "action", "OnAdd", "Name", obj.(*rbacv1.Role).Name, "namespace", obj.(*rbacv1.Role).Namespace)
+	logger.Debugw("rbac informer webhook", "action", "OnAdd", "Name", obj.(*rbacv1.Role).Name, "namespace", obj.(*rbacv1.Role).Namespace)
 }
 
 // OnUpdate update event informer
@@ -26,7 +26,7 @@ func (ri *RBACInformer) OnUpdate(oldObj, newObj interface{}) {
 	if err != nil {
 		logger.Warnw("rbac informer webhook", err, "action", "OnUpdate")
 	}
-	logger.Infow("rbac informer webhook", "action", "OnUpdate", "Name", newObj.(*rbacv1.Role).Name, "namespace", newObj.(*rbacv1.Role).Namespace)
+	logger.Debugw("rbac informer webhook", "action", "OnUpdate", "Name", newObj.(*rbacv1.Role).Name, "namespace", newObj.(*rbacv1.Role).Namespace)
 }
 
 // OnDelete delete event informer
@@ -34,7 +34,7 @@ func (ri *RBACInformer) OnDelete(obj interface{}) {
 	if role, ok := obj.(*rbacv1.Role); ok {
 		ri.Delete(role)
 	}
-	logger.Infow("rbac informer webhook", "action", "OnDelete", "Name", obj.(*rbacv1.Role).Name, "namespace", obj.(*rbacv1.Role).Namespace)
+	logger.Debugw("rbac informer webhook", "action", "OnDelete", "Name", obj.(*rbacv1.Role).Name, "namespace", obj.(*rbacv1.Role).Namespace)
 }
 
 // Add informer to local cache

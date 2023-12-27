@@ -15,7 +15,7 @@ func (s *ServiceInformer) OnAdd(obj interface{}, isInInitialList bool) {
 	if svc, ok := obj.(*corev1.Service); ok {
 		s.Add(svc)
 	}
-	logger.Infow("service informer webhook", "action", "OnAdd", "Name", obj.(*corev1.Service).Name, "namespace", obj.(*corev1.Service).Namespace)
+	logger.Debugw("service informer webhook", "action", "OnAdd", "Name", obj.(*corev1.Service).Name, "namespace", obj.(*corev1.Service).Namespace)
 }
 
 func (s *ServiceInformer) OnUpdate(oldObj, newObj interface{}) {
@@ -23,14 +23,14 @@ func (s *ServiceInformer) OnUpdate(oldObj, newObj interface{}) {
 	if err != nil {
 		logger.Warnw("service informer webhook", err, "action", "OnUpdate")
 	}
-	logger.Infow("service informer webhook", "action", "OnUpdate", "Name", newObj.(*corev1.Service).Name, "namespace", newObj.(*corev1.Service).Namespace)
+	logger.Debugw("service informer webhook", "action", "OnUpdate", "Name", newObj.(*corev1.Service).Name, "namespace", newObj.(*corev1.Service).Namespace)
 }
 
 func (s *ServiceInformer) OnDelete(obj interface{}) {
 	if svc, ok := obj.(*corev1.Service); ok {
 		s.Delete(svc)
 	}
-	logger.Infow("service informer webhook", "action", "OnDelete", "Name", obj.(*corev1.Service).Name, "namespace", obj.(*corev1.Service).Namespace)
+	logger.Debugw("service informer webhook", "action", "OnDelete", "Name", obj.(*corev1.Service).Name, "namespace", obj.(*corev1.Service).Namespace)
 }
 
 func (s *ServiceInformer) Delete(service *corev1.Service) {

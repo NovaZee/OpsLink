@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Logs</title>
+    <style>
+        #output {
+            background-color: black;
+            color: white;
+            height: 66.67vh; /* 设置高度为视口高度的2/3 */
+            overflow: auto;
+            padding: 10px;
+            white-space: pre-wrap;
+            width: 100%;
+
+            /* 修改滚动条的样式 */
+            scrollbar-width: thick; /* Firefox */
+            scrollbar-color: lightgray black;
+        }
+
+        /* Chrome, Edge, and Safari */
+        #output::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        #output::-webkit-scrollbar-thumb {
+            background-color: lightgray;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+<h1>Logs</h1>
+<button id="connectButton">Connect</button>
+<div id="output"></div>
+
+<script>
+    var socket;
+
+    // 监听按钮的点击事件
+    document.getElementById('connectButton').addEventListener('click', function() {
+        // 创建WebSocket连接
+        socket = new WebSocket('ws://127.0.0.1:8085/v1/logs?ns=meetingin&podName=common-live-server-697ddb8695-2rzxz&container=common-live-server');
+
+        // 设置请求头
+        socket.onopen = function() {
+            socket.send('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VyX25hbWUiOiJhZG1pbiIsImV4cCI6MTcwMzY3MTA3MywiaXNzIjoiMzgzODQtU2VhcmNoRW5naW5lIn0.NVoEb8q7yHWCHss1BbZZ-8snfXoJu8VAroaNvJ6CfnU');
+        };
+
+        // 监听WebSocket的消息事件
+        socket.onmessage = function(event) {
+            var output = document.getElementById('output');
+            output.innerHTML += '<p>' + event.data + '</p>';
+        };
+
+        // 监听WebSocket的错误事件
+        socket.onerror = function(error) {
+            console.log('WebSocket Error: ' + error);
+        };
+
+        // 监听WebSocket的关闭事件
+        socket.onclose = function(event) {
+            console.log('WebSocket connection closed: ' + event.code);
+        };
+    });
+
+    // 监听output元素的DOMNodeInserted事件
+    document.getElementById('output').addEventListener('DOMNodeInserted', function() {
+        this.scrollTop = this.scrollHeight;
+    });
+</script>
+</body>
+</html>

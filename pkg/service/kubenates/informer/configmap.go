@@ -16,7 +16,7 @@ func (c *ConfigMapInformer) OnAdd(obj interface{}, isInInitialList bool) {
 	if cm, ok := obj.(*v1.ConfigMap); ok {
 		c.Add(cm)
 	}
-	logger.Infow("configmap informer webhook", "action", "OnAdd", "Name", obj.(*v1.ConfigMap).Name)
+	logger.Debugw("configmap informer webhook", "action", "OnAdd", "Name", obj.(*v1.ConfigMap).Name)
 	//ws推送
 }
 
@@ -26,7 +26,7 @@ func (c *ConfigMapInformer) OnUpdate(oldObj, newObj interface{}) {
 	if err != nil {
 		logger.Warnw("configmap informer webhook", err, "action", "OnUpdate")
 	}
-	logger.Infow("configmap informer webhook", "action", "OnUpdate", "Name", newObj.(*v1.ConfigMap).Name)
+	logger.Debugw("configmap informer webhook", "action", "OnUpdate", "Name", newObj.(*v1.ConfigMap).Name)
 }
 
 // OnDelete delete event informer 当对象被删除时，将会调用这个函数。
@@ -34,7 +34,7 @@ func (c *ConfigMapInformer) OnDelete(obj interface{}) {
 	if cm, ok := obj.(*v1.ConfigMap); ok {
 		c.Delete(cm)
 	}
-	logger.Infow("configmap informer webhook", "action", "OnDelete", "Name", obj.(*v1.ConfigMap).Name)
+	logger.Debugw("configmap informer webhook", "action", "OnDelete", "Name", obj.(*v1.ConfigMap).Name)
 }
 
 // Delete informer to local cache

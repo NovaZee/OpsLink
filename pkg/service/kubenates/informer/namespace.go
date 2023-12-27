@@ -16,7 +16,7 @@ func (n *NamespaceInformer) OnAdd(obj interface{}, isInInitialList bool) {
 	if ns, ok := obj.(*corev1.Namespace); ok {
 		n.Add(ns)
 	}
-	logger.Infow("namespace informer webhook", "action", "OnAdd", "Name", obj.(*corev1.Namespace).Name)
+	logger.Debugw("namespace informer webhook", "action", "OnAdd", "Name", obj.(*corev1.Namespace).Name)
 }
 
 // OnUpdate update event informer 当对象被修改时，将会调用这个函数。
@@ -25,7 +25,7 @@ func (n *NamespaceInformer) OnUpdate(oldObj, newObj interface{}) {
 	if err != nil {
 		logger.Warnw("namespace informer webhook", err, "action", "OnUpdate")
 	}
-	logger.Infow("namespace informer webhook", "action", "OnUpdate", "Name", newObj.(*corev1.Namespace).Name)
+	logger.Debugw("namespace informer webhook", "action", "OnUpdate", "Name", newObj.(*corev1.Namespace).Name)
 }
 
 // OnDelete delete event informer 当对象被删除时，将会调用这个函数。
@@ -33,7 +33,7 @@ func (n *NamespaceInformer) OnDelete(obj interface{}) {
 	if ns, ok := obj.(*corev1.Namespace); ok {
 		n.Delete(ns)
 	}
-	logger.Infow("namespace informer webhook", "action", "OnDelete", "Name", obj.(*corev1.Namespace).Name)
+	logger.Debugw("namespace informer webhook", "action", "OnDelete", "Name", obj.(*corev1.Namespace).Name)
 }
 
 // Add informer to local cache

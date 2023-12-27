@@ -13,15 +13,15 @@ type EventInformer struct {
 
 func (e *EventInformer) OnAdd(obj interface{}, isInInitialList bool) {
 	e.store(obj, false)
-	logger.Infow("event informer webhook", "action", "OnAdd", "Message", obj.(*corev1.Event).Message, "namespace", obj.(*corev1.Event).Namespace)
+	logger.Debugw("event informer webhook", "action", "OnAdd", "Message", obj.(*corev1.Event).Message, "namespace", obj.(*corev1.Event).Namespace)
 }
 func (e *EventInformer) OnUpdate(oldObj, newObj interface{}) {
 	e.store(newObj, false)
-	logger.Infow("event informer webhook", "action", "OnAdd", "Message", newObj.(*corev1.Event).Message, "namespace", newObj.(*corev1.Event).Namespace)
+	logger.Debugw("event informer webhook", "action", "OnAdd", "Message", newObj.(*corev1.Event).Message, "namespace", newObj.(*corev1.Event).Namespace)
 }
 func (e *EventInformer) OnDelete(obj interface{}) {
 	e.store(obj, true)
-	logger.Infow("event informer webhook", "action", "OnAdd", "Message", obj.(*corev1.Event).Message, "namespace", obj.(*corev1.Event).Namespace)
+	logger.Debugw("event informer webhook", "action", "OnAdd", "Message", obj.(*corev1.Event).Message, "namespace", obj.(*corev1.Event).Namespace)
 }
 
 func (e *EventInformer) store(obj interface{}, isdelete bool) {

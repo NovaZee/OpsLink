@@ -16,7 +16,7 @@ func (si *SAInformer) OnAdd(obj interface{}, isInInitialList bool) {
 	if sa, ok := obj.(*corev1.ServiceAccount); ok {
 		si.Add(sa)
 	}
-	logger.Infow("sa informer webhook", "action", "OnAdd", "Name", obj.(*corev1.ServiceAccount).Name, "namespace", obj.(*corev1.ServiceAccount).Namespace)
+	logger.Debugw("sa informer webhook", "action", "OnAdd", "Name", obj.(*corev1.ServiceAccount).Name, "namespace", obj.(*corev1.ServiceAccount).Namespace)
 }
 
 // OnUpdate update event informer
@@ -25,7 +25,7 @@ func (si *SAInformer) OnUpdate(oldObj, newObj interface{}) {
 	if err != nil {
 		logger.Warnw("sa informer webhook", err, "action", "OnUpdate")
 	}
-	logger.Infow("sa informer webhook", "action", "OnUpdate", "Name", newObj.(*corev1.ServiceAccount).Name, "namespace", newObj.(*corev1.ServiceAccount).Namespace)
+	logger.Debugw("sa informer webhook", "action", "OnUpdate", "Name", newObj.(*corev1.ServiceAccount).Name, "namespace", newObj.(*corev1.ServiceAccount).Namespace)
 }
 
 // OnDelete delete event informer
@@ -33,7 +33,7 @@ func (si *SAInformer) OnDelete(obj interface{}) {
 	if sa, ok := obj.(*corev1.ServiceAccount); ok {
 		si.Delete(sa)
 	}
-	logger.Infow("sa informer webhook", "action", "OnDelete", "Name", obj.(*corev1.ServiceAccount).Name, "namespace", obj.(*corev1.ServiceAccount).Namespace)
+	logger.Debugw("sa informer webhook", "action", "OnDelete", "Name", obj.(*corev1.ServiceAccount).Name, "namespace", obj.(*corev1.ServiceAccount).Namespace)
 }
 
 // Add informer to local cache
