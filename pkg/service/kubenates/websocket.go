@@ -1,7 +1,6 @@
 package kubenates
 
 import (
-	"github.com/denovo/permission/pkg/util"
 	"github.com/gorilla/websocket"
 	"github.com/oppslink/protocol/logger"
 	"io"
@@ -29,22 +28,22 @@ func (k *K8sClient) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
 		return
 	}
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		w.WriteHeader(401)
-		return
-	}
-	// 解析token 时间
-	parseToken, err := util.ParseToken(token)
-	if err != nil {
-		w.WriteHeader(401)
-		return
-	}
-	err = parseToken.Valid()
-	if err != nil {
-		w.WriteHeader(401)
-		return
-	}
+	//token := r.Header.Get("Authorization")
+	//if token == "" {
+	//	w.WriteHeader(401)
+	//	return
+	//}
+	//// 解析token 时间
+	//parseToken, err := util.ParseToken(token)
+	//if err != nil {
+	//	w.WriteHeader(401)
+	//	return
+	//}
+	//err = parseToken.Valid()
+	//if err != nil {
+	//	w.WriteHeader(401)
+	//	return
+	//}
 	// 升级连接为 WebSocket
 	conn, err := Up.Upgrade(w, r, nil)
 	if err != nil {
