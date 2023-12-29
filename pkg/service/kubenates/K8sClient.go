@@ -13,7 +13,7 @@ import (
 )
 
 type K8sClient struct {
-	Clientset        kubernetes.Interface
+	Clientset        *kubernetes.Clientset
 	MetricsClientSet *versioned.Clientset
 	RestConfig       *rest.Config
 	K8sHandler       *K8sHandler
@@ -32,14 +32,14 @@ type K8sHandler struct {
 
 func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
 	var err error
-	var clientSet kubernetes.Interface
+	var clientSet *kubernetes.Clientset
 	var metricClient *versioned.Clientset
 	k8sClient := &K8sClient{K8sHandler: &K8sHandler{}}
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		logger.Infow("Program running from outside of the cluster")
-		set, mc, err2 := NewClientSet(conf)
+		set, mc, err2 := NewClientSet(conf, k8sClient)
 		if err2 != nil {
 			return nil, err2
 		}
@@ -71,7 +71,6 @@ func NewK8sConfig(conf *config.OpsLinkConfig) (*K8sClient, error) {
 
 	k8sClient.Clientset = clientSet
 	k8sClient.MetricsClientSet = metricClient
-	k8sClient.RestConfig = config
 
 	//init resource
 	k8sClient.initHandlers()
@@ -97,7 +96,7 @@ func (k *K8sClient) initHandlers() {
 }
 
 // NewClientSet Kubernetes客户端的接口实例D
-func NewClientSet(conf *config.OpsLinkConfig) (kubernetes.Interface, *versioned.Clientset, error) {
+func NewClientSet(conf *config.OpsLinkConfig, client *K8sClient) (*kubernetes.Clientset, *versioned.Clientset, error) {
 	var err error
 	kubeconfig := conf.Kubernetes.Kubeconfig
 	configOverrides := &clientcmd.ConfigOverrides{}
@@ -118,7 +117,7 @@ func NewClientSet(conf *config.OpsLinkConfig) (kubernetes.Interface, *versioned.
 	if err3 != nil {
 		return k8sClient, nil, err3
 	}
-
+	client.RestConfig = kubecfg
 	return k8sClient, mc, nil
 }
 

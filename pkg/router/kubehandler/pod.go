@@ -128,6 +128,12 @@ func (pc *PodController) GetLogs(ctx *gin.Context) {
 	return
 }
 
+func (pc *PodController) Pods(ctx *gin.Context) {
+	ns := ctx.DefaultQuery("namespace", "default")
+	KubeSuccessMsgResponse(ctx, http.StatusOK, pc.PodService.ListByNamespace(ns))
+	return
+}
+
 // GetName 实现deployment controller 路由 框架规范
 func (pc *PodController) GetName() string {
 	return "pod"
@@ -140,7 +146,7 @@ func (pc *PodController) ReadRegister(g gin.IRoutes, middle ...gin.HandlerFunc) 
 		pods.GET("list", func(ctx *gin.Context) { pc.List(ctx) })
 		pods.GET("getDetail/:ns/:name", func(ctx *gin.Context) { pc.GetFromApiServer(ctx) })
 		pods.GET("getPods", func(ctx *gin.Context) { pc.getPodsByLabel(ctx) })
-
+		pods.GET("pods", func(ctx *gin.Context) { pc.Pods(ctx) })
 		pods.GET("yaml/:ns/:name", func(ctx *gin.Context) { pc.downYaml(ctx) })
 		pods.GET("logs", func(ctx *gin.Context) { pc.GetLogs(ctx) })
 	}

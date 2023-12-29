@@ -39,6 +39,7 @@ func NewOpsLinkServer(config *config.OpsLinkConfig,
 
 	r := mux.NewRouter()
 	r.HandleFunc("/v1/logs", kcs.ServeHTTP)
+	r.HandleFunc("/v1/exec", kcs.ServeHTTP)
 	auth := &signal.AuthMiddleware{}
 	m := &signal.MuxHandler{
 		Handler: auth,

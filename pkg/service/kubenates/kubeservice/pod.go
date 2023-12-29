@@ -96,3 +96,25 @@ func (ps *PodService) DownToYaml(ns, name string) ([]byte, error) {
 	}
 	return nil, nil
 }
+
+func (ps *PodService) ListByNamespace(namespace string) []*kube.Pod {
+	podList, _ := ps.Pi.ListTargetALl(namespace)
+	res := make([]*kube.Pod, 0)
+
+	for _, pod := range podList {
+		res = append(res, &kube.Pod{
+			Name:         pod.Name,
+			Namespace:    pod.Namespace,
+			Images:       ps.helper.GetImagesByPod(pod.Spec.Containers), // 查看pod镜像
+			NodeName:     pod.Spec.NodeName,
+			Phase:        string(pod.Status.Phase),
+			Ip:           []string{pod.Status.PodIP, pod.Status.HostIP},
+			IsReady:      ps.helper.PodIsReady(pod), // 查看pod是否ready
+			EventMessage: ps.EventHandler.Ei.GetEvent(pod.Namespace, "Pod", pod.Name),
+			CreateTime:   pod.CreationTimestamp.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	return res
+
+}

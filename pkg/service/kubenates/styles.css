@@ -39,3 +39,7 @@
     margin-right: 10px;
     display: block;
 }
+.fixedDiv {
+    max-height: 300px; /* Adjust this value based on your needs */
+    overflow-y: auto;
+}

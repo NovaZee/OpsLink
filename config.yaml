@@ -13,9 +13,9 @@ server:
 #    - "http://127.0.0.1:2379"
 #  dial_timeout: 5
 kubernetes:
-  kubeconfig: './test.yaml'
+  kubeconfig: './denovo.yaml'
 logging:
-  level: info
+  level: debug
   json: false
 # Casbin权限策略配置
 casbin_path:
